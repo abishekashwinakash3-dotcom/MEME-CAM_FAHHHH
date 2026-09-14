@@ -282,8 +282,10 @@ Type these into the terminal that is running the script:
 Keys in the preview window: `space` off, `n` manual, `m` toggle, `d` HUD,
 `1-9 0 - = [ ]` fire a meme, `q` quit.
 
-Global hotkeys with `--hotkeys` (work while Meet has focus):
-`ctrl+alt+M` toggle · `ctrl+alt+N` manual · `ctrl+alt+.` off.
+Global hotkeys with `--hotkeys` (work while Meet has focus, so you never
+leave the call):
+`ctrl+alt+M` toggle · `ctrl+alt+N` manual · `ctrl+alt+.` off ·
+`ctrl+alt+1-9 0 - = [ ]` fire that meme (same order as `list`).
 
 The timed arm is the feature to actually use. `auto 60` before a call with
 friends means it cannot possibly still be armed an hour later when your

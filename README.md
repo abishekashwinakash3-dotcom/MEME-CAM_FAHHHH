@@ -152,7 +152,8 @@ the terminal running the script:
 
 `--mode manual` or `--mode auto` changes what it starts in. `--hotkeys` adds
 global shortcuts via pynput (`ctrl+alt+M` toggle, `ctrl+alt+N` manual,
-`ctrl+alt+.` off) so you needn't leave the meeting tab.
+`ctrl+alt+.` off, `ctrl+alt+1-9 0 - = [ ]` fire that meme) so you needn't
+leave the meeting tab.
 
 The timed arm is the one to build a habit around. The realistic mistake isn't
 forgetting to switch it on — it's forgetting it's still on two hours later, so

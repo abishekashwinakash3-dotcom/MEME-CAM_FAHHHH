@@ -30,6 +30,11 @@ import threading
 import time
 
 MODES = ("off", "manual", "auto")
+# ctrl+alt+<key> fires the pose at the same position, matching the preview
+# window's 1-9 0 - = [ ]. Plain characters on purpose: pynput's canonical()
+# maps the Ctrl/Alt-mangled key back to its base character, so these match on
+# Windows; virtual-key tokens (<77>) do not (verified with real hook events).
+HOTKEY_MEMES = "1234567890-=[]"
 
 POP_SECONDS = 2.5        # how long a named meme stays up
 STICKY = float("inf")    # `hold <pose>` until `clear`
@@ -245,18 +250,23 @@ class Controller:
             first = str(e).strip().splitlines()[0] if str(e).strip() else type(e).__name__
             self.log(f"hotkeys unavailable ({first}) - typed commands still work")
             return False
+        binds = {
+            "<ctrl>+<alt>+m": lambda: self.log(self.handle("toggle")),
+            "<ctrl>+<alt>+n": lambda: self.log(self.handle("manual")),
+            "<ctrl>+<alt>+.": lambda: self.log(self.handle("off")),
+        }
+        # Fire a meme without leaving the Meet tab.
+        for ch, pose in zip(HOTKEY_MEMES, self.poses):
+            binds[f"<ctrl>+<alt>+{ch}"] = lambda p=pose: self.log(self.fire(p))
         try:
-            hk = keyboard.GlobalHotKeys({
-                "<ctrl>+<alt>+m": lambda: self.log(self.handle("toggle")),
-                "<ctrl>+<alt>+n": lambda: self.log(self.handle("manual")),
-                "<ctrl>+<alt>+.": lambda: self.log(self.handle("off")),
-            })
+            hk = keyboard.GlobalHotKeys(binds)
             hk.daemon = True
             hk.start()
         except Exception as e:
             self.log(f"hotkeys unavailable ({e})")
             return False
-        self.log("hotkeys: ctrl+alt+M toggle   ctrl+alt+N manual   ctrl+alt+.  off")
+        self.log("hotkeys: ctrl+alt+M toggle   ctrl+alt+N manual   ctrl+alt+.  off\n"
+                 "         ctrl+alt+1-9 0 - = [ ]  fire a meme (works while Meet has focus)")
         return True
 
 
