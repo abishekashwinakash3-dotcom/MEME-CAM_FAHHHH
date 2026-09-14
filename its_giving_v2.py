@@ -430,6 +430,7 @@ class Body:
     def __init__(self, lms, W, H):
         p = np.array([[l.x * W, l.y * H] for l in lms], np.float32)
         self.shoulders, self.elbows, self.wrists = p[[11, 12]], p[[13, 14]], p[[15, 16]]
+        self.wrist_vis = min(getattr(lms[i], "visibility", 1.0) for i in (15, 16))
         vis = [getattr(lms[i], "visibility", 1.0) for i in (11, 12, 13, 14)]
         self.seen = min(vis) > 0.5
         shoulder_y = float(self.shoulders[:, 1].mean())
@@ -626,7 +627,10 @@ def decide(face, hands, body, tongue, gesture, m):
         return ("crashing_out" if screaming else "dance"), d
 
     for h in hands:
-        if near(h.thumb, face.nose, 0.35) and near(h.index, face.nose, 0.35) and near(h.thumb, h.index, 0.3):
+        # Measured on a real pinch: index 0.22, thumb 0.41-0.43, gap 0.45-0.48
+        # face-widths (the fingers sit either side of the nose, not together).
+        # The old 0.35 / 0.35 / 0.30 never matched it.
+        if near(h.thumb, face.nose, 0.48) and near(h.index, face.nose, 0.35) and near(h.thumb, h.index, 0.55):
             return "nose_closed", d
         if near(h.index, face.mouth, 0.22) and not near(h.palm, face.mouth, 0.3):
             return "flirty", d
@@ -639,11 +643,45 @@ def decide(face, hands, body, tongue, gesture, m):
         return "open_mouth", d
     if over("sneer", m, "z_sneer", "sneer") or m["z_disgust"] >= Z["disgust"]:
         return "disgusted", d
-    if hands and gesture > T["gesture"]:
+    # A hand held at the face (pinching the nose, over the mouth) jitters enough
+    # to read as motion; in traces that stole those poses as talking_to_wall.
+    # Talking to a wall is hands waving away from the face.
+    at_face = any(near(h.index, face.nose, 0.5) or near(h.palm, face.mouth, 0.8) for h in hands)
+    if hands and gesture > T["gesture"] and not at_face:
         return "talking_to_wall", d
     if m["turn"] > T["head_turn"] and over("squint", m, "z_squint", "squint"):
         return "suspicious", d
     return None, d
+
+
+TRACE_HEADER = ("t,mode,raw,hands,turn,z_squint,squint,jaw,gesture,"
+                "nose_thumb,nose_index,pinch,palm_mouth_1,palm_mouth_2,"
+                "wrist_mouth_1,wrist_mouth_2,wrist_vis\n")
+
+
+def trace_row(t, mode, raw, face, hands, body, m, gesture):
+    """One CSV line of what decide() saw, distances in face-widths, so thresholds
+    can be tuned from your measurements instead of guessed."""
+    cols = [f"{t:.2f}", mode, raw or "", str(len(hands))]
+    if face is None:
+        return ",".join(cols + [""] * 13) + "\n"
+    fw = face.w
+    cols += [f"{m['turn']:.3f}", f"{m['z_squint']:.1f}", f"{m['squint']:.2f}", f"{m['jaw']:.2f}",
+             f"{gesture:.3f}"]
+    if hands:
+        h = min(hands, key=lambda h: dist(h.index, face.nose))
+        cols += [f"{dist(h.thumb, face.nose) / fw:.2f}", f"{dist(h.index, face.nose) / fw:.2f}",
+                 f"{dist(h.thumb, h.index) / fw:.2f}"]
+    else:
+        cols += ["", "", ""]
+    pm = sorted(dist(h.palm, face.mouth) / fw for h in hands)[:2]
+    cols += [f"{v:.2f}" for v in pm] + [""] * (2 - len(pm))
+    # The pose model tracks wrists even when the hand model loses a palm
+    # pressed against the face.
+    wm = sorted(dist(w, face.mouth) / fw for w in body.wrists)[:2] if body is not None else []
+    cols += [f"{v:.2f}" for v in wm] + [""] * (2 - len(wm))
+    cols.append(f"{body.wrist_vis:.2f}" if body is not None else "")
+    return ",".join(cols) + "\n"
 
 
 def draw_hud(img, shown, raw, d, face, hands, body, base):
@@ -689,6 +727,8 @@ def main():
                     help="starting state (default: off — plain webcam, detectors idle)")
     ap.add_argument("--hotkeys", action="store_true",
                     help="global hotkeys via pynput, so you needn't leave the Meet tab")
+    ap.add_argument("--trace", metavar="CSV",
+                    help="write every armed detection's measurements to CSV, for tuning thresholds")
     args = ap.parse_args()
 
     calib_path = os.path.join(HERE, CALIB_FILE)
@@ -759,6 +799,11 @@ def main():
     last_seq = 0
     face, hands, body, raw, dbg = None, [], None, None, {}
     quit_armed = -10.0
+    trace = None
+    if args.trace:
+        trace = open(args.trace, "w", buffering=1)
+        trace.write(TRACE_HEADER)
+        print(f"Tracing detections to {args.trace}")
     sm_center, sm_h = np.array([W / 2, H / 2], np.float32), H * 0.45
 
     ctl = Controller(POSES, mode=args.mode)
@@ -806,6 +851,8 @@ def main():
                                           over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
                     gesture = motion.update(hands, face)
                     raw, dbg = decide(face, hands, body, tongue, gesture, m)
+                    if trace:
+                        trace.write(trace_row(now, ctl.mode, raw, face, hands, body, m, gesture))
 
                     auto = None
                     for p in POSES:
@@ -883,6 +930,8 @@ def main():
             elif 0 < key < 256 and chr(key) in TEST_KEYS:
                 print(ctl.fire(POSES[TEST_KEYS.index(chr(key))]))
     finally:
+        if trace:
+            trace.close()
         worker.close()
         cap.release()
         face_det.close()
