@@ -40,7 +40,7 @@ TEST_KEYS = "1234567890-=[]"
 FACE_SCALE = 2.0
 HOLD_FRAMES = 10
 ARM = {
-    "spin": 15, "suspicious": 8, "talking_to_wall": 6, "dance": 6, "crashing_out": 4,
+    "spin": 15, "suspicious": 12, "talking_to_wall": 6, "dance": 6, "crashing_out": 4,
     "open_mouth": 4, "tongue_out": 5, "disgusted": 5,
 }
 
@@ -62,7 +62,8 @@ FLOOR = dict(
 )
 T = dict(
     tongue=0.5,
-    head_turn=0.15,
+    head_turn=0.22,     # 0.15 fired on a glance at another window
+
     gesture=0.035,
 )
 
@@ -814,7 +815,10 @@ def main():
                     if auto and not fired and auto != shown:
                         # Once per appearance, so you can tell afterwards what
                         # your face set off (named memes already log "-> pose").
-                        print(f"[auto {time.strftime('%H:%M:%S')}] {auto}")
+                        why = (f"  (turn {dbg.get('turn', 0):.2f} / {T['head_turn']:.2f}, "
+                               f"squint {dbg.get('z_squint', 0):+.1f}s / {Z['squint']:.0f})"
+                               if auto == "suspicious" else "")
+                        print(f"[auto {time.strftime('%H:%M:%S')}] {auto}{why}")
                     fired = fired or auto
 
                     if face is not None:
