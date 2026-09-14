@@ -22,16 +22,24 @@ anything. That is the property you want before an interview.
 
 ## 1. Install
 
+The arm/disarm layer is already integrated in this repo — there is nothing to
+copy in. One command does the whole install:
+
 ```bash
-git clone https://github.com/gazijarin/itsgiving
-cd itsgiving
-python3.12 -m venv venv
-source venv/bin/activate            # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-pip install pyvirtualcam pynput     # virtual camera + optional global hotkeys
+./setup.sh                                          # macOS / Linux
+powershell -ExecutionPolicy Bypass -File setup.ps1  # Windows
 ```
 
-Then drop `meme_control.py` into the repo root, next to `its_giving_v2.py`.
+It finds a usable Python (3.9–3.12; mediapipe has no wheel for 3.13+), builds
+the virtualenv, installs the pinned dependencies, runs `doctor.py`, and offers
+to calibrate. If anything is wrong it names the command that fixes it.
+
+Run `python doctor.py` any time something misbehaves — it is the fastest way to
+find out whether the problem is the camera, the backend, the pins, or the
+calibration.
+
+Section 2 below records the edits that were applied to `its_giving_v2.py`, for
+anyone who wants to replay them against a fresh clone of the upstream repo.
 
 Virtual-camera backend, once per machine:
 
@@ -49,7 +57,9 @@ python its_giving_v2.py --calibrate
 
 ---
 
-## 2. Six edits to `its_giving_v2.py`
+## 2. The edits applied to `its_giving_v2.py`
+
+*(Already applied here. This section is the record, not a to-do list.)*
 
 ### Edit 1 — import (top of file, after the mediapipe imports)
 

@@ -30,14 +30,30 @@ guessed.
 
 ## Setup
 
+One command. It finds a usable Python, builds the virtualenv, installs the
+pinned dependencies, checks the machine, and offers to calibrate:
+
+```bash
+./setup.sh                                          # macOS / Linux
+powershell -ExecutionPolicy Bypass -File setup.ps1  # Windows
+```
+
+Or by hand:
+
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate           # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python doctor.py
 ```
 
-Python 3.11 or 3.12. Three MediaPipe models (~15 MB) download themselves on
-first run.
+Python 3.9–3.12 (mediapipe 0.10.21 has no wheel for 3.13+). Three MediaPipe
+models (~17 MB) download themselves on first run.
+
+**`python doctor.py` is the thing to run when something is wrong.** It checks
+the Python version, the dependency pins, the models and assets, whose face the
+calibration belongs to, which camera indexes actually work, and whether a
+virtual-camera backend exists — and prints the command that fixes each one.
 
 **Don't unpin the dependencies.** MediaPipe 0.10.30+ (including 1.0.x) ships
 macOS wheels that abort the moment they open a detector, so it's held at
@@ -51,9 +67,15 @@ nothing in the code cares. Unpin one and you have to unpin all three.
 ## Running it
 
 ```bash
+source venv/bin/activate              # every new terminal
 python its_giving_v2.py --calibrate   # once, seven seconds
 python its_giving_v2.py               # starts OFF - plain webcam
 ```
+
+**Calibrate before you rely on it.** A `calibration.json` ships in this repo and
+it is somebody else's resting face. It is valid JSON, so it loads without any
+warning and quietly measures your expressions against a stranger's neutral.
+`doctor.py` flags it.
 
 **It starts with the memes off.** The virtual camera runs and carries your
 ordinary face; nothing fires until you arm it. See
@@ -292,6 +314,9 @@ nose scrunch            z +19.3           z  +5.5        both fire
 its_giving_v2.py   the calibrated version — the one to use
 its_giving.py      v1: same poses, fixed thresholds
 meme_control.py    the off / manual / auto layer and its commands
+doctor.py          checks this machine can run it, and says what to fix
+setup.sh           one-command install (macOS / Linux)
+setup.ps1          one-command install (Windows)
 MEET_SETUP.md      Google Meet walkthrough, and what to do when it breaks
 calibration.json   your neutral face (made by --calibrate, gitignored)
 requirements.txt   pinned on purpose — read the comments before changing them

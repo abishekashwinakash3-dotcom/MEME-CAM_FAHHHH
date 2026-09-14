@@ -229,15 +229,21 @@ class Controller:
 
     def start_hotkeys(self):
         """Global hotkeys, so you never have to leave the Meet tab."""
+        # pynput raises ImportError both when it isn't installed and when it is
+        # installed but can't reach a display, so the exception type alone can't
+        # tell you which. Ask whether the package exists first, or you end up
+        # telling someone to install what they already have.
+        import importlib.util
+        if importlib.util.find_spec("pynput") is None:
+            self.log("hotkeys need pynput:  pip install pynput   (typed commands still work)")
+            return False
         try:
             from pynput import keyboard
-        except ImportError:
-            self.log("hotkeys need pynput:  pip install pynput   (terminal commands still work)")
-            return False
         except Exception as e:
-            # No display, or the OS refused input monitoring. Never fatal: the
-            # camera matters more than the shortcut.
-            self.log(f"hotkeys unavailable ({e}) - terminal commands still work")
+            # Installed, but no display or the OS refused input monitoring.
+            # Never fatal: the camera matters more than the shortcut.
+            first = str(e).strip().splitlines()[0] if str(e).strip() else type(e).__name__
+            self.log(f"hotkeys unavailable ({first}) - typed commands still work")
             return False
         try:
             hk = keyboard.GlobalHotKeys({
