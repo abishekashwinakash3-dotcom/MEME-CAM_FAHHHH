@@ -286,7 +286,9 @@ Global hotkeys with `--hotkeys` (work while Meet has focus, so you never
 leave the call):
 `ctrl+alt+A` auto for 60 s, then off by itself · `ctrl+alt+N` manual ·
 `ctrl+alt+.` off · `ctrl+alt+M` toggle ·
-`ctrl+alt+1-9 0 - = [ ]` fire that meme (same order as `list`).
+`ctrl+alt+1-9 0 - = [ ]` fire that meme (same order as `list`) ·
+`ctrl+alt+F` FAHHHHH (also `f` in the preview, or type `fahhh`; it has no
+gesture, and it is picture only — Meet gets no sound from a virtual camera).
 
 The timed arm is the feature to actually use. `auto 60` before a call with
 friends means it cannot possibly still be armed an hour later when your

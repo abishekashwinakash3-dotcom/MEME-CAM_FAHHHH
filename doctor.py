@@ -27,7 +27,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHIPPED_CALIB_SHA = "9daa39e0d253d36c02faa44ba3bee8c130291aad239ed0f965ff967cdf9fa166"
 
 POSES = ["time_out", "heart", "cover_nose", "crashing_out", "dance", "nose_closed", "flirty",
-         "hand_up", "tongue_out", "open_mouth", "disgusted", "talking_to_wall", "suspicious", "spin"]
+         "hand_up", "tongue_out", "open_mouth", "disgusted", "talking_to_wall", "suspicious", "spin",
+         "fahhh"]
 MODELS = ["face_landmarker.task", "hand_landmarker.task", "pose_landmarker_lite.task"]
 
 MAC, WIN = sys.platform == "darwin", os.name == "nt"

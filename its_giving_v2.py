@@ -34,7 +34,8 @@ from mediapipe.tasks.python import vision
 from meme_control import Controller, draw_badge
 
 POSES = ["time_out", "heart", "cover_nose", "crashing_out", "dance", "nose_closed", "flirty", "hand_up",
-         "tongue_out", "open_mouth", "disgusted", "talking_to_wall", "suspicious", "spin"]
+         "tongue_out", "open_mouth", "disgusted", "talking_to_wall", "suspicious", "spin",
+         "fahhh"]       # no gesture: fired by name, 'f' in the preview, or ctrl+alt+F
 TEST_KEYS = "1234567890-=[]"
 
 FACE_SCALE = 2.0
@@ -917,6 +918,8 @@ def main():
                 print(ctl.handle("manual"))
             elif key == ord(" "):
                 print(ctl.handle("off"))
+            elif key == ord("f"):
+                print(ctl.fire("fahhh"))
             elif key == ord("c"):
                 with worker.busy:            # the worker must not touch face_det meanwhile
                     new = run_calibration(cap, face_det, clock, args, W, H, window)

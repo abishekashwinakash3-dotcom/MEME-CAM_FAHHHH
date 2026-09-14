@@ -262,6 +262,8 @@ class Controller:
         # Fire a meme without leaving the Meet tab.
         for ch, pose in zip(HOTKEY_MEMES, self.poses):
             binds[f"<ctrl>+<alt>+{ch}"] = lambda p=pose: self.log(self.fire(p))
+        if "fahhh" in self.poses:
+            binds["<ctrl>+<alt>+f"] = lambda: self.log(self.fire("fahhh"))
         try:
             hk = keyboard.GlobalHotKeys(binds)
             hk.daemon = True
@@ -271,7 +273,8 @@ class Controller:
             return False
         self.log(f"hotkeys: ctrl+alt+A auto {AUTO_HOTKEY_SECONDS}s   ctrl+alt+N manual   "
                  "ctrl+alt+.  off   ctrl+alt+M toggle\n"
-                 "         ctrl+alt+1-9 0 - = [ ]  fire a meme (works while Meet has focus)")
+                 "         ctrl+alt+1-9 0 - = [ ]  fire a meme   ctrl+alt+F  FAHHHHH"
+                 "   (all work while Meet has focus)")
         return True
 
 
