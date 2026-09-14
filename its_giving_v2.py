@@ -9,7 +9,11 @@ Seven seconds of calibration; see README.md.
   python its_giving_v2.py --calibrate
   python its_giving_v2.py [--camera 1] [--no-vcam] [--size 640x480] [--no-flip]
 
-Keys:  q quit   d toggle HUD   c recalibrate   1-9 0 - = [ ] force-show a pose
+Memes are OFF by default: the virtual camera carries your plain webcam until you
+arm it. See MEET_SETUP.md. Modes: off / manual / auto, driven by typed commands.
+
+Keys:  q quit   d HUD   c recalibrate   space off   n manual   m toggle
+       1-9 0 - = [ ] force-show a pose
 """
 import argparse
 import json
@@ -25,6 +29,8 @@ import numpy as np
 import mediapipe as mp
 from mediapipe.tasks import python as mp_tasks
 from mediapipe.tasks.python import vision
+
+from meme_control import Controller, draw_badge
 
 POSES = ["time_out", "heart", "cover_nose", "crashing_out", "dance", "nose_closed", "flirty", "hand_up",
          "tongue_out", "open_mouth", "disgusted", "talking_to_wall", "suspicious", "spin"]
@@ -591,6 +597,10 @@ def main():
     ap.add_argument("--skip-check", action="store_true", help="skip the MediaPipe startup check")
     ap.add_argument("--size", default="1280x720", help="capture size, e.g. 1280x720 or 640x480 (lower = faster)")
     ap.add_argument("--no-flip", action="store_true", help="don't mirror the image")
+    ap.add_argument("--mode", default="off", choices=("off", "manual", "auto"),
+                    help="starting state (default: off — plain webcam, detectors idle)")
+    ap.add_argument("--hotkeys", action="store_true",
+                    help="global hotkeys via pynput, so you needn't leave the Meet tab")
     args = ap.parse_args()
 
     calib_path = os.path.join(HERE, CALIB_FILE)
@@ -622,7 +632,7 @@ def main():
     print(f"Camera {args.camera}: {W}x{H}")
 
     clock = Clock()
-    window = "it's giving v2  (q quit, d HUD, c recalibrate, 1-9 0 - = [ ] test)"
+    window = "it's giving v2  (space off, n manual, m toggle, d HUD, q quit)"
 
     if args.calibrate:
         face_det = vision.FaceLandmarker.create_from_options(vision.FaceLandmarkerOptions(
@@ -657,9 +667,14 @@ def main():
     shown, hold, show_hud = None, 0, True
     arm = {p: 0 for p in POSES}
     shown_since = 0.0
-    forced, forced_until = None, 0.0
     sm_center, sm_h = np.array([W / 2, H / 2], np.float32), H * 0.45
-    print("Running. Focus the preview window: q quit, d HUD, c recalibrate, 1-9 0 - = [ ] test a pose")
+
+    ctl = Controller(POSES, mode=args.mode)
+    ctl.start_console()
+    if args.hotkeys:
+        ctl.start_hotkeys()
+    print(ctl.help_text())
+    print(f"Running in [{ctl.mode}]. Type a command here, or use the keys in the preview window.")
 
     try:
         while True:
@@ -672,38 +687,51 @@ def main():
             if not args.no_flip:
                 frame = cv2.flip(frame, 1)
 
-            ts = clock.next()
-            mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            fr = face_det.detect_for_video(mp_img, ts)
-            hr = hand_det.detect_for_video(mp_img, ts)
-            pr = pose_det.detect_for_video(mp_img, ts)
-            face = Face(fr.face_landmarks[0], fr.face_blendshapes[0] if fr.face_blendshapes else None, W, H) \
-                if fr.face_landmarks else None
-            hands = [Hand(h, W, H) for h in hr.hand_landmarks]
-            body = Body(pr.pose_landmarks[0], W, H) if pr.pose_landmarks else None
-
-            m = measure(face, base) if face is not None else {}
-            tongue = tongue_score(frame, face, hands,
-                                  over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
-            gesture = motion.update(hands, face)
-            raw, dbg = decide(face, hands, body, tongue, gesture, m)
-
-            fired = None
-            for p in POSES:
-                arm[p] = arm[p] + 1 if raw == p else 0
-                if raw == p and arm[p] >= ARM.get(p, 3):
-                    fired = p
             now = time.monotonic()
-            if forced and now < forced_until:
-                fired = forced
-            if fired:
-                if fired != shown:
-                    shown_since = now
-                shown, hold = fired, HOLD_FRAMES
-            elif hold > 0:
-                hold -= 1
+            ctl.tick(now)
+            if ctl.consume_dirty():          # mode just changed - drop stale state
+                motion, shown, hold = Motion(), None, 0
+                arm = {p: 0 for p in POSES}
+
+            face, hands, body, m = None, [], None, {}
+            raw, dbg = None, {}
+
+            if ctl.mode == "off":
+                # No detection, no overlay. `frame` reaches the virtual camera
+                # exactly as the webcam produced it.
+                shown, hold = None, 0
             else:
-                shown = None
+                ts = clock.next()
+                mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                fr = face_det.detect_for_video(mp_img, ts)
+                hr = hand_det.detect_for_video(mp_img, ts)
+                pr = pose_det.detect_for_video(mp_img, ts)
+                face = Face(fr.face_landmarks[0], fr.face_blendshapes[0] if fr.face_blendshapes else None, W, H) \
+                    if fr.face_landmarks else None
+                hands = [Hand(h, W, H) for h in hr.hand_landmarks]
+                body = Body(pr.pose_landmarks[0], W, H) if pr.pose_landmarks else None
+
+                m = measure(face, base) if face is not None else {}
+                tongue = tongue_score(frame, face, hands,
+                                      over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
+                gesture = motion.update(hands, face)
+                raw, dbg = decide(face, hands, body, tongue, gesture, m)
+
+                fired = None
+                for p in POSES:
+                    arm[p] = arm[p] + 1 if raw == p else 0
+                    if ctl.mode == "auto" and raw == p and arm[p] >= ARM.get(p, 3):
+                        fired = p
+                fired = ctl.take_forced(now) or fired   # a named meme always wins
+
+                if fired:
+                    if fired != shown:
+                        shown_since = now
+                    shown, hold = fired, HOLD_FRAMES
+                elif hold > 0:
+                    hold -= 1
+                else:
+                    shown = None
 
             if face is not None:
                 sm_center = 0.7 * sm_center + 0.3 * np.array(face.center, np.float32)
@@ -721,16 +749,22 @@ def main():
                 vcam.send(frame)
                 vcam.sleep_until_next_frame()
 
-            preview = frame
+            preview = frame.copy()
             if show_hud:
-                preview = frame.copy()
                 draw_hud(preview, shown, raw, dbg, face, hands, body, base)
+            draw_badge(preview, ctl)        # preview only - never sent to Meet
             cv2.imshow(window, preview)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
+            if key == ord("q") or ctl.quit:
                 break
             if key == ord("d"):
                 show_hud = not show_hud
+            elif key == ord("m"):
+                print(ctl.handle("toggle"))
+            elif key == ord("n"):
+                print(ctl.handle("manual"))
+            elif key == ord(" "):
+                print(ctl.handle("off"))
             elif key == ord("c"):
                 new = run_calibration(cap, face_det, clock, args, W, H, window)
                 if new is not None:
@@ -740,7 +774,7 @@ def main():
                 motion, shown, hold = Motion(), None, 0
                 arm = {p: 0 for p in POSES}
             elif 0 < key < 256 and chr(key) in TEST_KEYS:
-                forced, forced_until = POSES[TEST_KEYS.index(chr(key))], now + 2.0
+                print(ctl.fire(POSES[TEST_KEYS.index(chr(key))]))
     finally:
         cap.release()
         face_det.close()

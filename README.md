@@ -52,15 +52,23 @@ nothing in the code cares. Unpin one and you have to unpin all three.
 
 ```bash
 python its_giving_v2.py --calibrate   # once, seven seconds
-python its_giving_v2.py
+python its_giving_v2.py               # starts OFF - plain webcam
 ```
+
+**It starts with the memes off.** The virtual camera runs and carries your
+ordinary face; nothing fires until you arm it. See
+[Arming and disarming](#arming-and-disarming) below, or `MEET_SETUP.md` for the
+full Google Meet walkthrough.
 
 | key | does |
 |---|---|
 | `q` | quit |
 | `d` | toggle the HUD |
 | `c` | recalibrate |
-| `1`–`9` `0` `-` `=` `[` `]` | force a reaction on screen for 2 seconds |
+| `space` | off — plain webcam |
+| `n` | manual — armed, command-only |
+| `m` | toggle off / last armed mode |
+| `1`–`9` `0` `-` `=` `[` `]` | force a reaction on screen for ~2.5 seconds |
 
 ---
 
@@ -89,9 +97,51 @@ Meet, Teams and Discord all have the same setting under Video.
 **Start this before your meeting app.** Most of them scan for cameras once at
 launch and won't notice a device that appeared later.
 
-A few things worth knowing before you turn it on in front of colleagues. It
-fires on its own. Everyone sees whatever it decides, so try it on a call with
-someone who likes you first. 
+**Don't quit it for a serious meeting.** Killing the script removes the camera
+device and your meeting app shows a black rectangle, which is worse than a meme.
+Leave it running and set it to `off` instead — that is what the modes are for.
+
+---
+
+## Arming and disarming
+
+Three modes. It starts in `off`.
+
+| mode | detectors | what the call sees |
+|---|---|---|
+| `off` *(default)* | not running at all | your plain webcam |
+| `manual` | running | your face, plus a meme **only** when you name one |
+| `auto` | running | reactions fire on their own |
+
+In `off` the frame is a straight pass-through: the MediaPipe calls are skipped
+entirely, so there is no code path that can draw anything. Type commands into
+the terminal running the script:
+
+| command | effect |
+|---|---|
+| *(blank Enter)* | **panic — straight to off.** Smash it. |
+| `off` / `panic` | plain webcam |
+| `manual` | armed, command-only |
+| `auto` | reactions fire on their own |
+| `auto 45` | auto for 45 seconds, then back to off **by itself** |
+| `heart`, `crash`, `2` | fire that reaction (prefix or number both work) |
+| `hold heart` / `clear` | stick one up until cleared |
+| `list` / `status` / `help` / `quit` | … |
+
+`--mode manual` or `--mode auto` changes what it starts in. `--hotkeys` adds
+global shortcuts via pynput (`ctrl+alt+M` toggle, `ctrl+alt+N` manual,
+`ctrl+alt+.` off) so you needn't leave the meeting tab.
+
+The timed arm is the one to build a habit around. The realistic mistake isn't
+forgetting to switch it on — it's forgetting it's still on two hours later, so
+`auto 60` before a call with friends means it cannot still be armed when
+someone who matters dials in.
+
+Two honest warnings. **`auto` misfires**: `talking_to_wall` triggers on hands
+moving in frame and `suspicious` on a turned head plus a squint, so an ordinary
+explaining-something gesture can set it off — `manual` is the mode for anything
+where funny is a bonus rather than the point. And **check the room before you
+arm it**: calls get recorded, and a recording outlives the joke.
 
 ---
 
@@ -241,6 +291,8 @@ nose scrunch            z +19.3           z  +5.5        both fire
 ```
 its_giving_v2.py   the calibrated version — the one to use
 its_giving.py      v1: same poses, fixed thresholds
+meme_control.py    the off / manual / auto layer and its commands
+MEET_SETUP.md      Google Meet walkthrough, and what to do when it breaks
 calibration.json   your neutral face (made by --calibrate, gitignored)
 requirements.txt   pinned on purpose — read the comments before changing them
 assets/            the memes, named after their pose
