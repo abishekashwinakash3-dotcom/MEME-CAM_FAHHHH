@@ -253,6 +253,9 @@ unused. Harmless either way.)
 
 ## 3. Run it
 
+On Windows, double-click `start.bat` (or a desktop shortcut to it) a minute
+before the Meet. It is `--hotkeys`, starting OFF; keep its window open.
+
 ```bash
 python its_giving_v2.py --hotkeys            # starts OFF
 python its_giving_v2.py --mode manual        # starts armed, command-only
