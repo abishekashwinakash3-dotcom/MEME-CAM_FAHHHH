@@ -811,6 +811,10 @@ def main():
                         arm[p] = arm[p] + 1 if raw == p else 0
                         if ctl.mode == "auto" and raw == p and arm[p] >= ARM.get(p, 3):
                             auto = p
+                    if auto and not fired and auto != shown:
+                        # Once per appearance, so you can tell afterwards what
+                        # your face set off (named memes already log "-> pose").
+                        print(f"[auto {time.strftime('%H:%M:%S')}] {auto}")
                     fired = fired or auto
 
                     if face is not None:
