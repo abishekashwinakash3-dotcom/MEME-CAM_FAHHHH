@@ -284,7 +284,8 @@ Keys in the preview window: `space` off, `n` manual, `m` toggle, `d` HUD,
 
 Global hotkeys with `--hotkeys` (work while Meet has focus, so you never
 leave the call):
-`ctrl+alt+M` toggle · `ctrl+alt+N` manual · `ctrl+alt+.` off ·
+`ctrl+alt+A` auto for 60 s, then off by itself · `ctrl+alt+N` manual ·
+`ctrl+alt+.` off · `ctrl+alt+M` toggle ·
 `ctrl+alt+1-9 0 - = [ ]` fire that meme (same order as `list`).
 
 The timed arm is the feature to actually use. `auto 60` before a call with

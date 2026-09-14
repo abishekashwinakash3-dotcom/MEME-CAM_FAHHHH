@@ -35,6 +35,7 @@ MODES = ("off", "manual", "auto")
 # maps the Ctrl/Alt-mangled key back to its base character, so these match on
 # Windows; virtual-key tokens (<77>) do not (verified with real hook events).
 HOTKEY_MEMES = "1234567890-=[]"
+AUTO_HOTKEY_SECONDS = 60   # ctrl+alt+A arms auto for this long, then it disarms itself
 
 POP_SECONDS = 2.5        # how long a named meme stays up
 STICKY = float("inf")    # `hold <pose>` until `clear`
@@ -254,6 +255,9 @@ class Controller:
             "<ctrl>+<alt>+m": lambda: self.log(self.handle("toggle")),
             "<ctrl>+<alt>+n": lambda: self.log(self.handle("manual")),
             "<ctrl>+<alt>+.": lambda: self.log(self.handle("off")),
+            # Timed on purpose: gesture mode from inside the call can't be left
+            # armed by accident.
+            "<ctrl>+<alt>+a": lambda: self.log(self.handle(f"auto {AUTO_HOTKEY_SECONDS}")),
         }
         # Fire a meme without leaving the Meet tab.
         for ch, pose in zip(HOTKEY_MEMES, self.poses):
@@ -265,7 +269,8 @@ class Controller:
         except Exception as e:
             self.log(f"hotkeys unavailable ({e})")
             return False
-        self.log("hotkeys: ctrl+alt+M toggle   ctrl+alt+N manual   ctrl+alt+.  off\n"
+        self.log(f"hotkeys: ctrl+alt+A auto {AUTO_HOTKEY_SECONDS}s   ctrl+alt+N manual   "
+                 "ctrl+alt+.  off   ctrl+alt+M toggle\n"
                  "         ctrl+alt+1-9 0 - = [ ]  fire a meme (works while Meet has focus)")
         return True
 
