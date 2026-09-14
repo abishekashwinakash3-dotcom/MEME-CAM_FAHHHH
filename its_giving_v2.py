@@ -757,6 +757,7 @@ def main():
     shown_since = 0.0
     last_seq = 0
     face, hands, body, raw, dbg = None, [], None, None, {}
+    quit_armed = -10.0
     sm_center, sm_h = np.array([W / 2, H / 2], np.float32), H * 0.45
 
     ctl = Controller(POSES, mode=args.mode)
@@ -844,8 +845,15 @@ def main():
             draw_badge(preview, ctl)        # preview only - never sent to Meet
             cv2.imshow(window, preview)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or ctl.quit:
+            if ctl.quit:
                 break
+            if key == ord("q"):
+                # Quitting removes the camera device and Meet goes black, so a
+                # stray keypress in the preview must not do it: q twice in 2 s.
+                if now - quit_armed < 2.0:
+                    break
+                quit_armed = now
+                print("press q again within 2s to quit - Meet's camera goes black when this closes")
             if key == ord("d"):
                 show_hud = not show_hud
             elif key == ord("m"):
