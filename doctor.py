@@ -195,7 +195,11 @@ def check_calibration():
         return
     import hashlib
     raw = open(path, "rb").read()
-    if hashlib.sha256(raw).hexdigest() == SHIPPED_CALIB_SHA:
+    # Git on Windows (core.autocrlf=true) checks this file out with CRLF line
+    # endings, which changes the hash. Compare the LF form, or the stranger's
+    # calibration passes as "yours" on exactly the machines least likely to
+    # have been calibrated.
+    if hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest() == SHIPPED_CALIB_SHA:
         warn("calibration.json is the one that SHIPPED WITH THE REPO — it is a "
              "stranger's face, not yours, and it loads without any warning",
              "python its_giving_v2.py --calibrate   (seven seconds, do this first)")

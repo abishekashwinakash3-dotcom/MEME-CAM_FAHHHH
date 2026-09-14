@@ -97,7 +97,7 @@ p = "calibration.json"
 SHIPPED = "9daa39e0d253d36c02faa44ba3bee8c130291aad239ed0f965ff967cdf9fa166"
 if not os.path.exists(p):
     print("yes")
-elif hashlib.sha256(open(p, "rb").read()).hexdigest() == SHIPPED:
+elif hashlib.sha256(open(p, "rb").read().replace(b"\r\n", b"\n")).hexdigest() == SHIPPED:
     print("yes")
 else:
     print("no")

@@ -21,6 +21,7 @@ import os
 import platform
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 
@@ -482,6 +483,92 @@ class Motion:
         return self.energy
 
 
+DETECT_WIDTH = 640   # MediaPipe resizes internally; converting a bigger frame only costs time
+
+
+class Detection:
+    __slots__ = ("seq", "frame", "face", "hands", "body")
+
+    def __init__(self, seq, frame, face, hands, body):
+        self.seq, self.frame, self.face, self.hands, self.body = seq, frame, face, hands, body
+
+
+class DetectWorker:
+    """Runs the three detectors on the newest frame in a background thread.
+
+    Inline, the virtual camera only gets a frame once all three models finish
+    (~85 ms at 640x480, ~120 ms at 1280x720 on a laptop CPU), so Meet drops to
+    8-11 fps the moment you arm it. Here the main loop keeps sending every
+    webcam frame and picks up results as they land; the meme trails your head
+    by one detection, which is invisible at meme scale. Frames that arrive
+    while a detection is running are dropped, never queued.
+    """
+
+    def __init__(self, face_det, hand_det, pose_det, clock, W, H):
+        self.dets = (face_det, hand_det, pose_det)
+        self.clock, self.W, self.H = clock, W, H
+        self.busy = threading.Lock()        # held while the detectors are in use
+        self._lock = threading.Lock()
+        self._wake = threading.Event()
+        self._pending, self._latest, self._seq = None, None, 0
+        self._stop = False
+        self._thread = threading.Thread(target=self._run, daemon=True, name="detect")
+        self._thread.start()
+
+    def submit(self, frame):
+        with self._lock:
+            self._pending = frame
+        self._wake.set()
+
+    def latest(self):
+        with self._lock:
+            return self._latest
+
+    def seq(self):
+        with self._lock:
+            return self._seq
+
+    def _run(self):
+        face_det, hand_det, pose_det = self.dets
+        W, H = self.W, self.H
+        while not self._stop:
+            if not self._wake.wait(0.2):
+                continue
+            self._wake.clear()
+            with self._lock:
+                frame, self._pending = self._pending, None
+            if frame is None:
+                continue
+            small = frame
+            if W > DETECT_WIDTH:
+                small = cv2.resize(frame, (DETECT_WIDTH, int(H * DETECT_WIDTH / W)),
+                                   interpolation=cv2.INTER_AREA)
+            mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(small, cv2.COLOR_BGR2RGB))
+            try:
+                with self.busy:
+                    ts = self.clock.next()
+                    fr = face_det.detect_for_video(mp_img, ts)
+                    hr = hand_det.detect_for_video(mp_img, ts)
+                    pr = pose_det.detect_for_video(mp_img, ts)
+            except Exception as e:          # a bad frame must never kill the camera
+                print(f"! detector error: {e}")
+                continue
+            # Landmarks are normalised, so scaling by the full W, H puts them
+            # back on the full-size frame even when detection ran on `small`.
+            face = Face(fr.face_landmarks[0], fr.face_blendshapes[0] if fr.face_blendshapes else None, W, H) \
+                if fr.face_landmarks else None
+            hands = [Hand(h, W, H) for h in hr.hand_landmarks]
+            body = Body(pr.pose_landmarks[0], W, H) if pr.pose_landmarks else None
+            with self._lock:
+                self._seq += 1
+                self._latest = Detection(self._seq, frame, face, hands, body)
+
+    def close(self):
+        self._stop = True
+        self._wake.set()
+        self._thread.join(timeout=2)
+
+
 def measure(face, base):
     """Every expression channel, raw and in sigma above your own neutral."""
     zpair = lambda n: (base.z(n + "Left", face.b(n + "Left")) + base.z(n + "Right", face.b(n + "Right"))) / 2
@@ -663,10 +750,13 @@ def main():
             print(f"Virtual camera unavailable ({e}). Preview-only.")
 
     face_det, hand_det, pose_det = build_detectors(model_paths)
+    worker = DetectWorker(face_det, hand_det, pose_det, clock, W, H)
     motion = Motion()
     shown, hold, show_hud = None, 0, True
     arm = {p: 0 for p in POSES}
     shown_since = 0.0
+    last_seq = 0
+    face, hands, body, raw, dbg = None, [], None, None, {}
     sm_center, sm_h = np.array([W / 2, H / 2], np.float32), H * 0.45
 
     ctl = Controller(POSES, mode=args.mode)
@@ -692,50 +782,49 @@ def main():
             if ctl.consume_dirty():          # mode just changed - drop stale state
                 motion, shown, hold = Motion(), None, 0
                 arm = {p: 0 for p in POSES}
-
-            face, hands, body, m = None, [], None, {}
-            raw, dbg = None, {}
+                face, hands, body, raw, dbg = None, [], None, None, {}
+                last_seq = worker.seq()      # ignore results from before the change
 
             if ctl.mode == "off":
                 # No detection, no overlay. `frame` reaches the virtual camera
                 # exactly as the webcam produced it.
                 shown, hold = None, 0
             else:
-                ts = clock.next()
-                mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                fr = face_det.detect_for_video(mp_img, ts)
-                hr = hand_det.detect_for_video(mp_img, ts)
-                pr = pose_det.detect_for_video(mp_img, ts)
-                face = Face(fr.face_landmarks[0], fr.face_blendshapes[0] if fr.face_blendshapes else None, W, H) \
-                    if fr.face_landmarks else None
-                hands = [Hand(h, W, H) for h in hr.hand_landmarks]
-                body = Body(pr.pose_landmarks[0], W, H) if pr.pose_landmarks else None
+                worker.submit(frame.copy())  # copy: the overlay below draws on `frame`
+                fired = ctl.take_forced(now)     # a named meme always wins, and shows at once
+                det = worker.latest()
+                if det is not None and det.seq != last_seq:
+                    # A fresh detection. Everything counted in frames (ARM,
+                    # HOLD_FRAMES, the motion filter, smoothing) advances here,
+                    # once per detection, so its timing is what it was inline.
+                    last_seq = det.seq
+                    face, hands, body = det.face, det.hands, det.body
+                    m = measure(face, base) if face is not None else {}
+                    tongue = tongue_score(det.frame, face, hands,
+                                          over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
+                    gesture = motion.update(hands, face)
+                    raw, dbg = decide(face, hands, body, tongue, gesture, m)
 
-                m = measure(face, base) if face is not None else {}
-                tongue = tongue_score(frame, face, hands,
-                                      over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
-                gesture = motion.update(hands, face)
-                raw, dbg = decide(face, hands, body, tongue, gesture, m)
+                    auto = None
+                    for p in POSES:
+                        arm[p] = arm[p] + 1 if raw == p else 0
+                        if ctl.mode == "auto" and raw == p and arm[p] >= ARM.get(p, 3):
+                            auto = p
+                    fired = fired or auto
 
-                fired = None
-                for p in POSES:
-                    arm[p] = arm[p] + 1 if raw == p else 0
-                    if ctl.mode == "auto" and raw == p and arm[p] >= ARM.get(p, 3):
-                        fired = p
-                fired = ctl.take_forced(now) or fired   # a named meme always wins
+                    if face is not None:
+                        sm_center = 0.7 * sm_center + 0.3 * np.array(face.center, np.float32)
+                        sm_h = 0.7 * sm_h + 0.3 * face.h * FACE_SCALE
+                    if not fired:
+                        if hold > 0:
+                            hold -= 1
+                        else:
+                            shown = None
 
                 if fired:
                     if fired != shown:
                         shown_since = now
                     shown, hold = fired, HOLD_FRAMES
-                elif hold > 0:
-                    hold -= 1
-                else:
-                    shown = None
-
-            if face is not None:
-                sm_center = 0.7 * sm_center + 0.3 * np.array(face.center, np.float32)
-                sm_h = 0.7 * sm_h + 0.3 * face.h * FACE_SCALE
 
             if shown:
                 asset = assets[shown]
@@ -766,16 +855,19 @@ def main():
             elif key == ord(" "):
                 print(ctl.handle("off"))
             elif key == ord("c"):
-                new = run_calibration(cap, face_det, clock, args, W, H, window)
+                with worker.busy:            # the worker must not touch face_det meanwhile
+                    new = run_calibration(cap, face_det, clock, args, W, H, window)
                 if new is not None:
                     base = new
                     base.save(calib_path)
                     print(f"Saved {CALIB_FILE}.")
                 motion, shown, hold = Motion(), None, 0
                 arm = {p: 0 for p in POSES}
+                last_seq = worker.seq()
             elif 0 < key < 256 and chr(key) in TEST_KEYS:
                 print(ctl.fire(POSES[TEST_KEYS.index(chr(key))]))
     finally:
+        worker.close()
         cap.release()
         face_det.close()
         hand_det.close()

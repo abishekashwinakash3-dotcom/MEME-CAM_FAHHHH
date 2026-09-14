@@ -43,7 +43,12 @@ if (-not $py) {
     Note "'Add python.exe to PATH' in the installer - then run this again."
     Die "no usable Python"
 }
-$pyVer = & $py[0] $py[1..($py.Length - 1)] -V 2>&1
+# Split into exe + args. Don't slice with $py[1..($py.Length-1)]: for a
+# one-element array that is $py[1..0], which yields $py[0] again and runs
+# "python python -V".
+$pyExe  = $py[0]
+$pyArgs = @($py | Select-Object -Skip 1)
+$pyVer = & $pyExe @pyArgs -V 2>&1
 Note "using $($py -join ' ')  ($pyVer)"
 
 # ------------------------------------------------------------------- 2. venv
@@ -93,7 +98,7 @@ if ($doctor -eq 0) {
 import hashlib, os
 p = 'calibration.json'
 S = '9daa39e0d253d36c02faa44ba3bee8c130291aad239ed0f965ff967cdf9fa166'
-print('yes' if (not os.path.exists(p) or hashlib.sha256(open(p,'rb').read()).hexdigest() == S) else 'no')
+print('yes' if (not os.path.exists(p) or hashlib.sha256(open(p,'rb').read().replace(b'\r\n', b'\n')).hexdigest() == S) else 'no')
 "@
     if ($needs -eq "yes") {
         Step "Calibration"
