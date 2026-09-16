@@ -1,4 +1,4 @@
-# It's giving... — the meme cam for Google Meet
+# The MEME CAM for Google Meet, VideoCalls & CAMs  
 
 ![Python 3.9–3.12](https://img.shields.io/badge/python-3.9–3.12-3776ab)
 ![Windows · macOS · Linux](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-555)
