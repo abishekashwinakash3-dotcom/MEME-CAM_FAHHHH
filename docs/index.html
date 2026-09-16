@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>It's giving — Meme Cam for Google Meet</title>
+<meta name="description" content="Pull a face and the matching meme lands on your head, live in Google Meet. Off by default, hotkeys that work inside the call, 15 memes including FAHHHHH.">
+<meta property="og:title" content="It's giving — Meme Cam for Google Meet">
+<meta property="og:description" content="Live memes on your face in Google Meet. Off by default, fire any meme with a hotkey.">
+<meta property="og:image" content="img/vcam-heart.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --card: #ffffff;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, 0.10);
+  --accent: #ffd800;
+  --accent-ink: #0b0b0b;
+  --hero: #111111;
+  --hero-ink: #ffffff;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --good: #006300;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --card: #161615; --ink: #ffffff; --ink-2: #c3c2b7;
+    --muted: #898781; --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --hero: #000000; --series-1: #3987e5; --series-2: #d95926; --good: #0ca30c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --card: #161615; --ink: #ffffff; --ink-2: #c3c2b7;
+  --muted: #898781; --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+  --hero: #000000; --series-1: #3987e5; --series-2: #d95926; --good: #0ca30c;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+kbd {
+  font: 600 0.85em/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: var(--card); color: var(--ink); border: 1px solid var(--axis);
+  border-bottom-width: 3px; border-radius: 6px; padding: 3px 7px; white-space: nowrap;
+}
+code { font: 0.9em ui-monospace, "Cascadia Mono", Consolas, monospace; background: var(--ring); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--hero); color: #e8e8e3; padding: 16px 18px; border-radius: 12px; overflow-x: auto; font: 14px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; }
+pre code { background: none; padding: 0; }
+
+/* nav */
+nav.top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--hero) 92%, transparent); backdrop-filter: blur(8px); }
+nav.top .wrap { display: flex; align-items: center; gap: 18px; min-height: 56px; flex-wrap: wrap; padding-block: 8px; }
+nav.top .brand { color: var(--hero-ink); font-weight: 800; text-decoration: none; letter-spacing: -0.01em; margin-right: auto; }
+nav.top .brand span { background: var(--accent); color: var(--accent-ink); padding: 1px 7px; border-radius: 6px; margin-left: 4px; }
+nav.top a.link { color: #c9c9c3; text-decoration: none; font-size: 14px; }
+nav.top a.link:hover { color: #fff; }
+.theme-btn { background: none; border: 1px solid #444; color: #ddd; border-radius: 8px; padding: 4px 9px; cursor: pointer; font: inherit; font-size: 14px; }
+
+/* hero */
+header.hero { background: var(--hero); color: var(--hero-ink); padding-block: 56px 64px; overflow: hidden; }
+.hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+.eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+h1 { font-size: clamp(2.2rem, 5.2vw, 3.8rem); line-height: 1.02; margin: 0 0 18px; letter-spacing: -0.03em; font-weight: 900; }
+h1 .fah { color: var(--accent); text-shadow: 3px 3px 0 #c81414; }
+.hero p.lede { font-size: 1.15rem; color: #d7d7d0; margin: 0 0 26px; max-width: 34rem; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-weight: 700; text-decoration: none; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { border: 1px solid #555; color: #fff; }
+.btn:hover { filter: brightness(1.07); }
+.hero-shot { position: relative; }
+.hero-shot img { border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.hero-shot .badge { position: absolute; left: 14px; bottom: 14px; background: rgba(0,0,0,.72); color: #fff; font-size: 13px; padding: 5px 10px; border-radius: 8px; }
+.hero-note { font-size: 13px; color: #9a9a93; margin-top: 10px; }
+
+/* sections */
+section { padding-block: 64px; }
+section.alt { background: var(--surface); }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 8px; line-height: 1.15; }
+.sub { color: var(--ink-2); margin: 0 0 32px; max-width: 46rem; }
+h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.cards { display: grid; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--ring); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); }
+.steps { grid-template-columns: repeat(3, 1fr); counter-reset: step; }
+.step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 900; margin-bottom: 12px; }
+.step p { margin: 0; color: var(--ink-2); }
+
+/* before/after */
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+figure { margin: 0; }
+figure img { border-radius: 12px; border: 1px solid var(--ring); }
+figcaption { font-size: 14px; color: var(--ink-2); margin-top: 8px; }
+
+/* hotkeys */
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.key { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+.key .combo { flex: none; }
+.key.star { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+.key span.what { color: var(--ink-2); font-size: 15px; }
+
+/* memes */
+.memes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.meme { background: var(--card); border: 1px solid var(--ring); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.meme img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; background: #111; }
+.meme .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.meme .name { font-weight: 800; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.meme .name small { color: var(--muted); font-weight: 600; }
+.meme .how { font-size: 13.5px; color: var(--ink-2); line-height: 1.4; flex: 1; }
+.meme.new { border-color: var(--accent); }
+.meme .tag { background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 5px; }
+
+/* modes */
+.modes { grid-template-columns: repeat(3, 1fr); }
+.mode .pill { display: inline-block; font: 700 12px/1 ui-monospace, Consolas, monospace; padding: 5px 8px; border-radius: 6px; margin-bottom: 10px; color: #fff; }
+.mode p { margin: 0; color: var(--ink-2); }
+
+/* results */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.stat { background: var(--card); border: 1px solid var(--ring); border-radius: 12px; padding: 16px 18px; }
+.stat .label { font-size: 14px; color: var(--ink-2); }
+.stat .value { font-size: 2.1rem; font-weight: 700; line-height: 1.15; margin-top: 4px; }
+.stat .note { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-card { background: var(--card); border: 1px solid var(--ring); border-radius: 14px; padding: 18px 18px 12px; position: relative; }
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-card h3 { font-size: 1rem; }
+.chart-card .cap { font-size: 14px; color: var(--ink-2); margin: 0 0 10px; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { fill: var(--muted); font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+svg.chart text.val { fill: var(--ink); font-weight: 600; }
+svg.chart text.xl { fill: var(--ink-2); }
+svg.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+svg.chart .baseline { stroke: var(--axis); stroke-width: 1; }
+svg.chart .ref { stroke: var(--ink-2); stroke-width: 1; }
+svg.chart .hit { fill: transparent; cursor: default; }
+svg.chart .hit:hover, svg.chart .hit:focus { fill: var(--ring); outline: none; }
+.tip { position: absolute; pointer-events: none; background: var(--hero); color: #fff; font-size: 13px; padding: 7px 10px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -115%); opacity: 0; transition: opacity .12s; z-index: 5; }
+.tip b { font-weight: 700; }
+details.numbers { margin-top: 8px; font-size: 14px; }
+details.numbers summary { cursor: pointer; color: var(--ink-2); }
+details.numbers table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+details.numbers th, details.numbers td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+.gap-note { margin-top: 18px; }
+
+/* proof */
+.proof { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+.proof-stack { display: grid; gap: 16px; }
+
+/* troubleshooting */
+.table-wrap { overflow-x: auto; border: 1px solid var(--ring); border-radius: 12px; background: var(--card); }
+table.trouble { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 15px; }
+table.trouble th, table.trouble td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+table.trouble th { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+table.trouble tr:last-child td { border-bottom: 0; }
+
+.install pre { margin: 0 0 14px; }
+/* Grid items default to min-width:auto, so one long code line would widen the
+   whole page on a phone; let them shrink and the <pre> scroll instead. */
+.hero-grid > *, .two > *, .proof > *, .charts > *, .cards > *, .ba > * { min-width: 0; }
+pre { max-width: 100%; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+footer { background: var(--hero); color: #b9b9b2; padding-block: 36px; font-size: 14px; }
+footer a { color: #fff; }
+
+@media (max-width: 860px) {
+  .hero-grid, .proof, .two, .charts { grid-template-columns: 1fr; }
+  .steps, .modes { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  nav.top a.link.opt { display: none; }
+}
+@media (max-width: 480px) {
+  nav.top { position: static; }
+  .ba { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr; }
+  header.hero { padding-block: 36px 44px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#">It's giving<span>MEME CAM</span></a>
+    <a class="link" href="#start">Start</a>
+    <a class="link" href="#hotkeys">Hotkeys</a>
+    <a class="link opt" href="#memes">Memes</a>
+    <a class="link opt" href="#results">Results</a>
+    <a class="link opt" href="#help">Help</a>
+    <a class="link" href="https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON">GitHub</a>
+    <button class="theme-btn" id="theme" type="button" aria-label="Toggle dark mode">◐</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Live in Google Meet</span>
+      <h1>Pull a face.<br>The meme lands.<br><span class="fah">FAHHHHH.</span></h1>
+      <p class="lede">A webcam that drops the matching meme on your head, live, in Google Meet. It starts <b>off</b>, so your friends see a plain webcam until you fire a meme with a hotkey, from inside the call.</p>
+      <div class="cta">
+        <a class="btn primary" href="#start">Set it up in 3 steps</a>
+        <a class="btn ghost" href="https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON">View on GitHub</a>
+      </div>
+    </div>
+    <div>
+      <div class="hero-shot">
+        <img src="img/fahhh-demo.gif" width="400" height="300" alt="The FAHHHHH meme animating over a webcam frame">
+        <span class="badge">Ctrl+Alt+F</span>
+      </div>
+      <p class="hero-note">The FAHHHHH animation on a captured frame. Face blurred for privacy.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Before every Meet: three steps</h2>
+    <p class="sub">Install once (below), then this is all it takes.</p>
+    <div class="cards steps">
+      <div class="card step"><h3>Double-click “Meme Cam”</h3><p>The desktop shortcut to <code>start.bat</code>. It starts <b>OFF</b>, a plain webcam, with all hotkeys on.</p></div>
+      <div class="card step"><h3>Pick OBS Virtual Camera</h3><p>In Meet, click the <b>^</b> next to the camera button and choose <b>OBS Virtual Camera</b>. Meet remembers it.</p></div>
+      <div class="card step"><h3>Minimize, don’t close</h3><p>Keep both windows open. After the call, press <kbd>q</kbd> twice in the preview window.</p></div>
+    </div>
+
+    <div class="ba" style="margin-top:28px">
+      <figure><img src="img/vcam-off.jpg" width="640" height="480" alt="Plain webcam with memes off" loading="lazy"><figcaption><b>Off:</b> what Meet gets by default</figcaption></figure>
+      <figure><img src="img/vcam-heart.jpg" width="640" height="480" alt="Heart meme over the face" loading="lazy"><figcaption><b><kbd>Ctrl+Alt+2</kbd>:</b> a second later</figcaption></figure>
+    </div>
+    <p class="hero-note" style="color:var(--muted)">Both frames were captured straight off OBS Virtual Camera during a real test on 14 September 2026.</p>
+  </div>
+</section>
+
+<section id="hotkeys" class="alt">
+  <div class="wrap">
+    <h2>Hotkeys that work inside the call</h2>
+    <p class="sub">Keep your cursor in Meet. Nobody sees you switch windows, because you never do.</p>
+    <div class="keys">
+      <div class="key star"><span class="combo"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd></span><span class="what"><b>FAHHHHH</b></span></div>
+      <div class="key star"><span class="combo"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd></span><span class="what">Gesture mode for 60 s, then off by itself</span></div>
+      <div class="key"><span class="combo"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></span><span class="what">Manual: memes only when you fire one</span></div>
+      <div class="key"><span class="combo"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>]</kbd></span><span class="what">Fire memes 1–14</span></div>
+      <div class="key"><span class="combo"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>.</kbd></span><span class="what">Off: plain webcam, right now</span></div>
+      <div class="key"><span class="combo"><kbd>q</kbd> <kbd>q</kbd></span><span class="what">In the preview: quit after the call</span></div>
+    </div>
+
+    <div class="cards modes" style="margin-top:28px">
+      <div class="card mode"><span class="pill" style="background:#6b6b66">OFF</span><h3>Plain webcam</h3><p>The default. Detection isn’t even running, so no code path can draw a meme.</p></div>
+      <div class="card mode"><span class="pill" style="background:#b8860b">MANUAL</span><h3>Memes on command</h3><p>Your face, plus a meme only when you fire one. For calls where funny is a bonus.</p></div>
+      <div class="card mode"><span class="pill" style="background:#c0392b">AUTO</span><h3>Gesture mode</h3><p>Memes fire from your gestures. Arm it with <kbd>Ctrl+Alt+A</kbd> and it switches itself off after a minute.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="memes">
+  <div class="wrap">
+    <h2>15 memes, and how to set them off</h2>
+    <p class="sub">In gesture mode, hold the pose for a moment. Or skip the gesture and use the hotkey.</p>
+    <div class="memes" id="meme-grid"></div>
+    <figure style="margin-top:28px">
+      <img src="img/all-memes-live.jpg" width="1280" height="960" alt="All 14 original memes fired live during a Google Meet" loading="lazy">
+      <figcaption>All 14 original memes, fired one after another during a live Meet and captured off the virtual camera.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="proof" class="alt">
+  <div class="wrap">
+    <h2>It really works in Google Meet</h2>
+    <p class="sub">Real screenshots from the first test call. Faces and names are blurred.</p>
+    <div class="proof">
+      <figure><img src="img/meet-obs-virtual-camera.jpg" width="1305" height="991" alt="Google Meet with OBS Virtual Camera selected" loading="lazy"><figcaption>Google Meet with <b>OBS Virtual Camera</b> selected, fed by the meme cam.</figcaption></figure>
+      <div class="proof-stack">
+        <figure><img src="img/preview-off-hud.jpg" width="1282" height="751" alt="The meme cam preview window showing the HUD and the OFF badge" loading="lazy"><figcaption>The preview window with its HUD. The <b>OFF</b> badge is drawn on the preview only, never sent to Meet.</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <h2>Tested on a real laptop, tuned from real data</h2>
+    <p class="sub">Windows 11, HP Wide Vision HD webcam, Python 3.12.10, mediapipe 0.10.21, OBS Studio 32.2.1, Google Meet in Brave. Measured 14 September 2026.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Armed frame rate</div><div class="value">3×</div><div class="note">9.0 → 27.2 fps</div></div>
+      <div class="stat"><div class="label">Virtual-camera checks</div><div class="value">15 / 15</div><div class="note">read back off OBS Virtual Camera</div></div>
+      <div class="stat"><div class="label">Hotkey checks</div><div class="value">23 / 23</div><div class="note">real keyboard-hook events</div></div>
+      <div class="stat"><div class="label">Landmark error</div><div class="value">0.8 px</div><div class="note">downscaled vs full-res detection</div></div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-card wide">
+        <h3>Frames per second Meet receives while armed</h3>
+        <p class="cap">The virtual camera used to wait for all three models (hands 35 ms and body 43 ms per frame at 640×480). Detection now runs on a background thread. The line marks the webcam’s own 30 fps.</p>
+        <div id="chart-fps"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Nose pinch: detections that match the pose</h3>
+        <p class="cap">One 90-second trace, replayed through the old and new limits. A real pinch measured thumb 0.41–0.43 face-widths from the nose; the old limit was 0.35.</p>
+        <div class="legend"><span><i style="background:var(--series-1)"></i>Old limits</span><span><i style="background:var(--series-2)"></i>Tuned limits</span></div>
+        <div id="chart-pinch"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Held gestures stolen by talking_to_wall</h3>
+        <p class="cap">A hand held at the face jitters enough to read as waving. Waving now ignores hands at the face.</p>
+        <div class="legend"><span><i style="background:var(--series-1)"></i>Before</span><span><i style="background:var(--series-2)"></i>After</span></div>
+        <div id="chart-ttw"></div>
+      </div>
+    </div>
+    <p class="gap-note sub"><b>Also fixed:</b> <code>suspicious</code> misfired 4, then 3 times per minute on glances at another window, and 0 times after the fix. <b>Known gap:</b> with both palms over the mouth, the hand model found two hands in 0 of 247 detections, so <code>cover_nose</code> works best with <kbd>Ctrl+Alt+3</kbd>.</p>
+  </div>
+</section>
+
+<section id="install" class="alt">
+  <div class="wrap">
+    <h2>Install once</h2>
+    <p class="sub">Windows shown. macOS and Linux use <code>./setup.sh</code>; everything else is the same.</p>
+    <div class="two install">
+      <div>
+        <h3>1. Python 3.12 and OBS Studio</h3>
+<pre><code>winget install --id Python.Python.3.12 --exact --scope user
+winget install --id OBSProject.OBSStudio --exact</code></pre>
+        <h3>2. The meme cam</h3>
+<pre><code>git clone https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON
+cd itsgiving_-Updated_off-ON
+powershell -ExecutionPolicy Bypass -File setup.ps1</code></pre>
+      </div>
+      <div>
+        <h3>3. Calibrate (7 seconds, facing the light)</h3>
+<pre><code>venv\Scripts\python its_giving_v2.py --calibrate</code></pre>
+        <h3>4. Desktop shortcut</h3>
+        <p class="sub" style="margin-bottom:14px">Right-click <code>start.bat</code> → <b>Send to</b> → <b>Desktop (create shortcut)</b>. Name it “Meme Cam”.</p>
+        <h3>Something off?</h3>
+<pre><code>venv\Scripts\python doctor.py</code></pre>
+        <p class="sub" style="margin:0">It names what’s wrong and the command that fixes it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="help">
+  <div class="wrap">
+    <h2>When something goes wrong</h2>
+    <p class="sub">Every one of these happened during testing. Full guide: <a href="https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON/blob/main/MEET_SETUP.md">MEET_SETUP.md</a>.</p>
+    <div class="table-wrap">
+      <table class="trouble">
+        <thead><tr><th>What you see</th><th>Why</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>“Another app is using the camera”</td><td>Meet is set to your real webcam, which the meme cam holds</td><td><b>^</b> next to the camera button → <b>OBS Virtual Camera</b></td></tr>
+          <tr><td>Meet video paused or black</td><td>The meme cam stopped</td><td>Double-click Meme Cam, then turn Meet’s camera off and on</td></tr>
+          <tr><td>Meme cam closes right after starting</td><td>The browser grabbed the real webcam first</td><td>Set Meet to OBS Virtual Camera, then start again</td></tr>
+          <tr><td>OBS Virtual Camera not in the list</td><td>Browser was open before OBS was installed</td><td>Reload the Meet tab (F5)</td></tr>
+          <tr><td>Hotkeys do nothing</td><td>Started without hotkeys</td><td>Use <code>start.bat</code></td></tr>
+          <tr><td>Gestures rarely fire</td><td>Stranger’s calibration, or a backlit face</td><td>Recalibrate facing the light</td></tr>
+          <tr><td>Meme jumps onto someone else</td><td>Memes follow one face</td><td>Keep the frame to yourself</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Built on <a href="https://github.com/gazijarin/itsgiving">gazijarin/itsgiving</a> by Gazi (MIT). This fork adds the off/manual/auto layer, Meet hotkeys, the Windows launcher, threaded detection, trace-based tuning and FAHHHHH. <a href="https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON">Source on GitHub</a>.</p>
+    <p>Check the room before you arm it: calls get recorded, and a recording outlives the joke.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // ---- theme toggle (explicit choice wins over the OS setting)
+  var root = document.documentElement, btn = document.getElementById("theme");
+  try { var saved = localStorage.getItem("theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  btn.addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+  });
+
+  // ---- meme gallery
+  var MEMES = [
+    ["time_out", "1", "Referee’s T: one hand flat on top, one vertical underneath"],
+    ["heart", "2", "Heart hands, index tips and thumb tips touching"],
+    ["cover_nose", "3", "Both palms over your mouth. Best with the hotkey"],
+    ["crashing_out", "4", "Both hands on your head, mouth open"],
+    ["dance", "5", "Elbows up, hands behind your head, mouth closed"],
+    ["nose_closed", "6", "Pinch your nose and hold still for ~3 s"],
+    ["flirty", "7", "One fingertip on your lips"],
+    ["hand_up", "8", "Open palm raised beside your head"],
+    ["tongue_out", "9", "Tongue out, mouth open, facing the light"],
+    ["open_mouth", "0", "Drop your jaw"],
+    ["disgusted", "-", "Scrunch your nose, or brows down and frown"],
+    ["talking_to_wall", "=", "Wave your hands in front of you, away from your face"],
+    ["suspicious", "[", "A big head turn plus a squint, held ~1.5 s"],
+    ["spin", "]", "Leave the frame completely"],
+    ["fahhh", "F", "No gesture. Fire it on purpose"]
+  ];
+  var grid = document.getElementById("meme-grid");
+  MEMES.forEach(function (m, i) {
+    var el = document.createElement("div");
+    el.className = "meme" + (m[0] === "fahhh" ? " new" : "");
+    el.innerHTML =
+      '<img src="img/memes/' + m[0] + '.jpg" width="360" height="270" loading="lazy" alt="' + m[0].replace(/_/g, " ") + ' meme">' +
+      '<div class="body"><div class="name"><span>' + (i + 1) + ". " + m[0] + (m[0] === "fahhh" ? ' <span class="tag">NEW</span>' : "") +
+      '</span></div><div class="how">' + m[2] + '</div><div><kbd>Ctrl+Alt+' + m[1] + "</kbd></div></div>";
+    grid.appendChild(el);
+  });
+
+  // ---- charts: grouped bars, one axis, hover tooltip, table view
+  function barChart(host, cfg) {
+    // Drawn at the host's real pixel width rather than a stretched viewBox, so
+    // the 24px bar cap and the label measurements hold at every screen size.
+    host.innerHTML = "";
+    var W = Math.max(280, Math.round(host.clientWidth)), H = cfg.height || 250, M = { t: 18, r: 12, b: 46, l: 40 };
+    var iw = W - M.l - M.r, ih = H - M.t - M.b, n = cfg.categories.length, s = cfg.series.length;
+    var band = iw / n, barW = Math.min(24, (band * 0.62 - 2 * (s - 1)) / s);
+    var y = function (v) { return M.t + ih - (v / cfg.max) * ih; };
+    var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("class", "chart");
+    host.appendChild(svg);             // attached first, so text can be measured
+    svg.setAttribute("role", "img"); svg.setAttribute("aria-label", cfg.label);
+    function add(tag, attrs, text) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      if (text != null) e.textContent = text;
+      svg.appendChild(e); return e;
+    }
+    cfg.ticks.forEach(function (t) {
+      add("line", { x1: M.l, x2: W - M.r, y1: y(t), y2: y(t), "class": t === 0 ? "baseline" : "gridline" });
+      add("text", { x: M.l - 8, y: y(t) + 4, "text-anchor": "end" }, t);
+    });
+    var tip = document.createElement("div"); tip.className = "tip"; host.appendChild(tip);
+    cfg.categories.forEach(function (cat, ci) {
+      var groupW = s * barW + (s - 1) * 2, gx = M.l + band * ci + (band - groupW) / 2;
+      cfg.series.forEach(function (se, si) {
+        var v = se.values[ci], x = gx + si * (barW + 2), top = y(v), base = y(0), r = Math.min(4, (base - top) / 2);
+        var d = "M" + x + "," + base + "V" + (top + r) + "Q" + x + "," + top + " " + (x + r) + "," + top +
+                "H" + (x + barW - r) + "Q" + (x + barW) + "," + top + " " + (x + barW) + "," + (top + r) + "V" + base + "Z";
+        add("path", { d: d, fill: "var(" + se.color + ")" });
+        add("text", { x: x + barW / 2, y: top - 6, "text-anchor": "middle", "class": "val" }, se.fmt ? se.fmt(v) : v);
+      });
+      var lines = String(cat).split("\n");
+      lines.forEach(function (ln, li) {
+        var t = add("text", { x: M.l + band * ci + band / 2, y: H - M.b + 18 + li * 17, "text-anchor": "middle", "class": "xl" }, ln);
+        if (t.getComputedTextLength() > band - 8) t.style.fontSize = "10.5px";   // never collide with a neighbour
+        if (li > 0 && t.getComputedTextLength() > band - 6) svg.removeChild(t); // detail stays in tooltip + table
+      });
+      var hit = add("rect", { x: M.l + band * ci, y: M.t, width: band, height: ih, "class": "hit", tabindex: 0 });
+      function show() {
+        tip.innerHTML = "<b>" + lines.join(" ") + "</b><br>" + cfg.series.map(function (se) {
+          return (s > 1 ? se.name + ": " : "") + (se.fmt ? se.fmt(se.values[ci]) : se.values[ci]) + (cfg.unit ? " " + cfg.unit : "");
+        }).join("<br>");
+        var box = svg.getBoundingClientRect(), hb = host.getBoundingClientRect(), sc = box.width / W;
+        var peak = Math.max.apply(null, cfg.series.map(function (se) { return se.values[ci]; }));
+        tip.style.left = (box.left - hb.left + (M.l + band * ci + band / 2) * sc) + "px";
+        tip.style.top = (box.top - hb.top + y(peak) * sc) + "px";
+        tip.style.opacity = 1;
+      }
+      function hide() { tip.style.opacity = 0; }
+      hit.addEventListener("mouseenter", show); hit.addEventListener("mouseleave", hide);
+      hit.addEventListener("focus", show); hit.addEventListener("blur", hide);
+    });
+    if (cfg.ref != null) {
+      add("line", { x1: M.l, x2: W - M.r, y1: y(cfg.ref), y2: y(cfg.ref), "class": "ref" });
+      add("text", { x: W - M.r, y: y(cfg.ref) - 6, "text-anchor": "end" }, cfg.refLabel);
+    }
+    var det = document.createElement("details"); det.className = "numbers";
+    det.innerHTML = "<summary>Show the numbers</summary><table><thead><tr><th>" + cfg.catHead + "</th>" +
+      cfg.series.map(function (se) { return "<th>" + se.name + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      cfg.categories.map(function (c, ci) {
+        return "<tr><td>" + String(c).replace("\n", " ") + "</td>" + cfg.series.map(function (se) {
+          return "<td>" + (se.fmt ? se.fmt(se.values[ci]) : se.values[ci]) + (cfg.unit ? " " + cfg.unit : "") + "</td>";
+        }).join("") + "</tr>";
+      }).join("") + "</tbody></table>";
+    host.appendChild(det);
+  }
+
+  function drawAll() {
+  barChart(document.getElementById("chart-fps"), {
+    label: "Frames per second while armed: before 9.0 at 640x480; after 26.8 at 640x480 and 27.2 at 1280x720",
+    categories: ["Before\n640×480, inline", "After\n640×480, threaded", "After\n1280×720, threaded"],
+    series: [{ name: "fps", color: "--series-1", values: [9.0, 26.8, 27.2], fmt: function (v) { return v.toFixed(1); } }],
+    max: 32, ticks: [0, 10, 20, 30], ref: 30.3, refLabel: "webcam 30 fps", unit: "fps", catHead: "Setup", height: 240
+  });
+  barChart(document.getElementById("chart-pinch"), {
+    label: "Nose pinch matches, old vs tuned limits, by trace phase",
+    categories: ["Hand at nose", "Still pinch", "Palms over mouth\n(should not match)"],
+    series: [
+      { name: "Old limits", color: "--series-1", values: [5, 1, 1] },
+      { name: "Tuned limits", color: "--series-2", values: [71, 67, 1] }
+    ],
+    max: 80, ticks: [0, 20, 40, 60, 80], unit: "detections", catHead: "Trace phase", height: 260
+  });
+  barChart(document.getElementById("chart-ttw"), {
+    label: "Detections stolen by talking_to_wall, before vs after, by trace phase",
+    categories: ["Hand at nose", "Still pinch", "Palms over mouth"],
+    series: [
+      { name: "Before", color: "--series-1", values: [68, 24, 29] },
+      { name: "After", color: "--series-2", values: [5, 7, 4] }
+    ],
+    max: 80, ticks: [0, 20, 40, 60, 80], unit: "detections", catHead: "Trace phase", height: 260
+  });
+  }
+  drawAll();
+  var resizeTimer;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawAll, 150); });
+})();
+</script>
+</body>
+</html>

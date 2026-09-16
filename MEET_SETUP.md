@@ -1,345 +1,286 @@
-# Safe-mode meme cam for Google Meet
+# The complete Google Meet guide
 
-Adds an arm / disarm layer to `gazijarin/itsgiving` so the virtual camera can stay
-running all day without ever putting a meme on your face unless you ask for one.
+Everything you need to use the meme cam in Google Meet, from a fresh laptop to
+your first FAHHHHH. It was written from a real setup and real test calls on a
+Windows 11 laptop (Meet running in Brave). Every problem in the
+troubleshooting table below actually happened.
 
-**The design decision that matters:** don't stop the script for serious meetings.
-If you quit it mid-call, the camera device disappears and Meet shows a black
-rectangle, which is worse than a meme. Instead the script keeps publishing — it
-just publishes your untouched webcam feed until you arm it.
+**Contents:** [1 What you need](#1-what-you-need) ·
+[2 One-time install](#2-one-time-install) ·
+[3 Before every Meet](#3-before-every-meet) ·
+[4 During the call](#4-during-the-call) ·
+[5 Gestures that fire](#5-gestures-that-fire) ·
+[6 After the call](#6-after-the-call) ·
+[7 Habits that keep it a good idea](#7-habits-that-keep-it-a-good-idea) ·
+[8 Troubleshooting](#8-troubleshooting) ·
+[9 macOS and Linux](#9-macos-and-linux) ·
+[10 Tuning with --trace](#10-tuning-with---trace)
 
-| mode | detectors | what Meet sees |
+---
+
+## 1. What you need
+
+- A laptop with a webcam (the one this was tested on: HP Wide Vision HD, 30 fps)
+- **Python 3.9–3.12**. 3.12 is recommended; mediapipe has no wheel for 3.13+.
+- **OBS Studio**. You never have to open it during a call; it just provides the
+  **OBS Virtual Camera** device that Meet picks up.
+- Google Meet in Chrome, Brave or Edge
+
+How it fits together:
+
+```
+your webcam ──► meme cam (its_giving_v2.py) ──► OBS Virtual Camera ──► Google Meet
+                 off: passes the frame through untouched
+                 manual / auto: draws the meme on your head
+```
+
+Meet never touches your real webcam, only the virtual camera, and only the
+meme cam decides what goes onto it.
+
+---
+
+## 2. One-time install
+
+### 2.1 Python and OBS
+
+On Windows, both install from a terminal:
+
+```powershell
+winget install --id Python.Python.3.12 --exact --scope user
+winget install --id OBSProject.OBSStudio --exact
+```
+
+(OBS asks for administrator approval; click **Yes**.) Or download them from
+[python.org](https://www.python.org/downloads/) and [obsproject.com](https://obsproject.com).
+
+### 2.2 The meme cam
+
+```powershell
+git clone https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON
+cd itsgiving_-Updated_off-ON
+powershell -ExecutionPolicy Bypass -File setup.ps1
+```
+
+`setup.ps1` does the rest: it finds Python, creates `venv\`, installs the
+pinned dependencies, and runs `doctor.py`. A healthy result ends like this:
+
+```
+Webcam
+  ok    camera 0: 640x480   <- default
+
+Virtual camera (what Meet will see)
+  ok    backend ready, device name: 'OBS Virtual Camera'
+```
+
+### 2.3 Calibrate (seven seconds)
+
+Gesture mode measures your expressions against *your* resting face. The
+`calibration.json` that ships with the repo belongs to someone else, and
+`doctor.py` warns you about it.
+
+```powershell
+venv\Scripts\python its_giving_v2.py --calibrate
+```
+
+Sit how you normally sit, look at the camera, and hold a bored face. **Face
+the light.** A bright window behind you washes your face out and leaves the
+detector guessing. A good calibration prints no warnings:
+
+```
+Calibrated on 147 frames. Your neutral face:
+  jawOpen          0.003 ± 0.015
+  ...
+```
+
+You can recalibrate any time: press `c` in the preview window.
+
+### 2.4 Put the launcher on your desktop
+
+Right-click **`start.bat`** → **Send to** → **Desktop (create shortcut)**, and
+rename the shortcut "Meme Cam". That is the only thing you'll open before a
+call from now on.
+
+---
+
+## 3. Before every Meet
+
+1. **Double-click "Meme Cam".** A small window opens and prints your hotkeys,
+   then the preview window appears. It starts **OFF**: the bottom bar reads
+   `OFF - plain webcam`.
+
+   ![The preview window in OFF](docs/img/preview-off-hud.jpg)
+
+2. **Join the Meet.** Start the meme cam *before* you join, so the browser
+   finds the virtual camera straight away.
+3. **Pick the camera:** click the **^** next to the camera button at the bottom
+   → **OBS Virtual Camera**. (Or ⋮ → Settings → Video → Camera.) The browser
+   remembers this, so usually you only do it once.
+
+   ![Google Meet with OBS Virtual Camera selected](docs/img/meet-obs-virtual-camera.jpg)
+
+4. **Turn Meet's own effects off** (the Backgrounds and effects button → no
+   effect). Background blur runs *after* your feed arrives and blurs memes into mush.
+5. **Minimize** both meme cam windows. **Don't close them.**
+
+Your self-view in Meet is exactly what everyone else sees, so it doubles as
+your preview.
+
+---
+
+## 4. During the call
+
+Keep your cursor in the Meet tab; the hotkeys work anyway.
+
+| hotkey | does |
+|---|---|
+| **Ctrl+Alt+F** | **FAHHHHH** |
+| **Ctrl+Alt+A** | gesture mode for 60 seconds, then back to off **by itself** |
+| **Ctrl+Alt+N** | manual: armed, memes only when you fire one |
+| **Ctrl+Alt+1–9, 0, -, =, [, ]** | fire memes 1–14 (table below) |
+| **Ctrl+Alt+.** | off: plain webcam, right now |
+| Ctrl+Alt+M | toggle off / last armed mode |
+
+A fired meme stays up for about 2.5 seconds. You can fire memes while armed
+(manual or gesture mode). While off, a fire is refused on purpose.
+
+**The three modes:**
+
+| mode | what the call sees | use it for |
 |---|---|---|
-| `off` *(default)* | not running at all | your plain webcam |
-| `manual` | running | your face, plus a meme **only** when you name one |
-| `auto` | running | original behaviour — poses fire on their own |
+| **off** (start) | your plain webcam; detection isn't even running | the whole call, until you want a meme |
+| **manual** | your face, plus a meme only when you fire one | calls where funny is a bonus, not the point |
+| **gesture mode** (auto) | memes fire from your gestures | a minute of chaos with friends, via Ctrl+Alt+A |
 
-In `off` the frame is a straight pass-through. Not "memes suppressed" — the
-MediaPipe calls are skipped entirely, so there is no code path that can draw
-anything. That is the property you want before an interview.
+### The 15 memes
+
+| # | meme | hotkey | preview key |
+|---|---|---|---|
+| 1 | time_out | Ctrl+Alt+1 | `1` |
+| 2 | heart | Ctrl+Alt+2 | `2` |
+| 3 | cover_nose | Ctrl+Alt+3 | `3` |
+| 4 | crashing_out | Ctrl+Alt+4 | `4` |
+| 5 | dance | Ctrl+Alt+5 | `5` |
+| 6 | nose_closed | Ctrl+Alt+6 | `6` |
+| 7 | flirty | Ctrl+Alt+7 | `7` |
+| 8 | hand_up | Ctrl+Alt+8 | `8` |
+| 9 | tongue_out | Ctrl+Alt+9 | `9` |
+| 10 | open_mouth | Ctrl+Alt+0 | `0` |
+| 11 | disgusted | Ctrl+Alt+- | `-` |
+| 12 | talking_to_wall | Ctrl+Alt+= | `=` |
+| 13 | suspicious | Ctrl+Alt+[ | `[` |
+| 14 | spin | Ctrl+Alt+] | `]` |
+| 15 | **fahhh** | **Ctrl+Alt+F** | `f` |
+
+![All 14 memes live on the virtual camera](docs/img/all-memes-live.jpg)
+
+Typed commands work too, in the small window: `manual`, `heart`, `fahhh`,
+`auto 60`, `hold heart` / `clear`, `status`, `list`. A **blank Enter** is the
+panic button: straight back to off.
 
 ---
 
-## 1. Install
+## 5. Gestures that fire
 
-The arm/disarm layer is already integrated in this repo — there is nothing to
-copy in. One command does the whole install:
+In gesture mode, a pose has to **hold for a moment**: each one must be seen on
+several detections in a row before it fires. These tips come from traced test
+rounds:
+
+| meme | do this | tip from testing |
+|---|---|---|
+| time_out | referee's T: one hand flat on top, one vertical underneath | both hands clearly in frame |
+| heart | heart hands, index tips and thumb tips touching | both hands visible, fingertips together |
+| cover_nose | both palms over your mouth | **use Ctrl+Alt+3.** The hand model can't see palms pressed to the face (2 hands found in 0 of 247 detections) |
+| crashing_out | both hands on your head, mouth open | scream it |
+| dance | elbows up, hands behind your head, mouth closed | elbows must be in frame |
+| nose_closed | pinch your nose | **hold still for ~3 s.** Fingers either side of the nose is fine |
+| flirty | one fingertip on your lips | keep your palm away from your mouth |
+| hand_up | open palm raised beside your head | fingers spread |
+| tongue_out | tongue out, mouth open | **face the light.** Pink palms near the mouth can also read as a tongue |
+| open_mouth | drop your jaw | easy; yawns count too |
+| disgusted | scrunch your nose, or brows down and frown | exaggerate it |
+| talking_to_wall | wave your hands in front of you | hands **away from your face**; hands held at the face no longer trigger it |
+| suspicious | turn your head clearly and squint | **a big turn, held ~1.5 s.** Glances don't count, on purpose |
+| spin | leave the frame completely | stay out for ~1.5 s |
+
+---
+
+## 6. After the call
+
+Click the preview window and press **q twice** (within 2 seconds). A single
+`q` only warns you, because quitting removes the camera. The small window then
+says `Meme cam stopped`. Press any key to close it. Nothing keeps running in
+the background.
+
+---
+
+## 7. Habits that keep it a good idea
+
+- **Leave it in off.** Start every call off; arm only when you mean to.
+- **Use Ctrl+Alt+A, not plain auto.** It switches itself off after 60 seconds,
+  so it can't still be armed when a teacher or supervisor joins.
+- **Never quit mid-call.** Meet pauses your video when the camera vanishes.
+  Press Ctrl+Alt+. instead.
+- **Check the room.** School and university Meets get recorded, and a
+  recording outlives the joke. For anything near an admissions officer or a
+  recommender, leave it off.
+- **One face at a time.** Memes follow a single face; if someone walks behind
+  you, the meme can jump onto them.
+
+---
+
+## 8. Troubleshooting
+
+| what you see | why | fix |
+|---|---|---|
+| Meet: **"Another app is using the camera"** | Meet is set to your real webcam, which the meme cam is holding | **^** next to the camera button → **OBS Virtual Camera** |
+| Meet video **paused / black** | the meme cam stopped (window closed, `q q`) | double-click **Meme Cam** again, then turn Meet's camera off and on |
+| meme cam window **flashes and closes** at start | another app (often the browser) grabbed the real webcam first | set Meet to OBS Virtual Camera, close other camera apps, start again |
+| **OBS Virtual Camera** not in Meet's list | the browser was open before OBS was installed | reload the Meet tab (F5) and rejoin |
+| hotkeys do nothing | started without hotkeys | use **start.bat** (it passes `--hotkeys`) |
+| video choppy while armed | an old version: detection blocked every frame (~9 fps) | update. Detection is threaded now (~27 fps measured) |
+| gestures rarely fire | stranger's calibration, or backlit face | `--calibrate` facing the light; check `python doctor.py` |
+| `suspicious` pops up on its own | old thresholds fired on glances | update: it now needs a clear, held turn |
+| nose pinch shows `talking_to_wall` | old thresholds; a hand at the face read as waving | update: measured limits, and waving now ignores hands at the face |
+| `cover_nose` never fires | hand model can't see palms pressed to the face | Ctrl+Alt+3 |
+| meme lands on someone else | another face in frame | memes track one face; keep the frame to yourself |
+| everything fires at once | calibrated mid-expression | recalibrate with a bored face |
+| MediaPipe aborts on start (macOS) | a dependency got unpinned | `pip install -r requirements.txt` |
+
+When in doubt, run `venv\Scripts\python doctor.py`. It names what is wrong and
+the command that fixes it.
+
+---
+
+## 9. macOS and Linux
 
 ```bash
-./setup.sh                                          # macOS / Linux
-powershell -ExecutionPolicy Bypass -File setup.ps1  # Windows
-```
-
-It finds a usable Python (3.9–3.12; mediapipe has no wheel for 3.13+), builds
-the virtualenv, installs the pinned dependencies, runs `doctor.py`, and offers
-to calibrate. If anything is wrong it names the command that fixes it.
-
-Run `python doctor.py` any time something misbehaves — it is the fastest way to
-find out whether the problem is the camera, the backend, the pins, or the
-calibration.
-
-Section 2 below records the edits that were applied to `its_giving_v2.py`, for
-anyone who wants to replay them against a fresh clone of the upstream repo.
-
-Virtual-camera backend, once per machine:
-
-| OS | do this |
-|---|---|
-| macOS | install [OBS Studio](https://obsproject.com), open it once, quit it |
-| Windows | install OBS Studio, or run its virtual-camera installer |
-| Linux | `sudo apt install v4l2loopback-dkms && sudo modprobe v4l2loopback` |
-
-Calibrate once (seven seconds of a bored face):
-
-```bash
+./setup.sh
+source venv/bin/activate
 python its_giving_v2.py --calibrate
+python its_giving_v2.py --hotkeys
 ```
+
+- **macOS:** install OBS Studio, open it once, quit it. Allow your terminal
+  under System Settings → Privacy & Security → **Camera** and
+  **Accessibility** (for the hotkeys).
+- **Linux:** `sudo apt install v4l2loopback-dkms && sudo modprobe v4l2loopback`.
+
+The Meet steps are identical; the camera is named by the script when it starts.
 
 ---
 
-## 2. The edits applied to `its_giving_v2.py`
+## 10. Tuning with --trace
 
-*(Already applied here. This section is the record, not a to-do list.)*
+If a gesture won't fire or fires too easily, measure before you change anything:
 
-### Edit 1 — import (top of file, after the mediapipe imports)
-
-Find:
-
-```python
-from mediapipe.tasks.python import vision
+```powershell
+venv\Scripts\python its_giving_v2.py --hotkeys --trace trace.csv
 ```
 
-Add below it:
-
-```python
-from meme_control import Controller, draw_badge
-```
-
-### Edit 2 — two new flags (in `main()`, in the argparse block)
-
-Find:
-
-```python
-    ap.add_argument("--no-flip", action="store_true", help="don't mirror the image")
-```
-
-Add below it:
-
-```python
-    ap.add_argument("--mode", default="off", choices=("off", "manual", "auto"),
-                    help="starting state (default: off — plain webcam)")
-    ap.add_argument("--hotkeys", action="store_true",
-                    help="global hotkeys via pynput, so you needn't leave the Meet tab")
-```
-
-### Edit 3 — build the controller (just before the main loop)
-
-Find this line:
-
-```python
-    print("Running. Focus the preview window: q quit, d HUD, c recalibrate, 1-9 0 - = [ ] test a pose")
-```
-
-Replace it with:
-
-```python
-    ctl = Controller(POSES, mode=args.mode)
-    ctl.start_console()
-    if args.hotkeys:
-        ctl.start_hotkeys()
-    print(ctl.help_text())
-    print(f"Running in [{ctl.mode}]. Type a command here, or use the keys in the preview window.")
-```
-
-### Edit 4 — gate the detectors (the big one)
-
-Inside `while True:`, find the block that starts:
-
-```python
-            ts = clock.next()
-```
-
-…and ends with:
-
-```python
-            else:
-                shown = None
-```
-
-Replace that **whole** block with:
-
-```python
-            now = time.monotonic()
-            ctl.tick(now)
-            if ctl.consume_dirty():          # mode just changed — drop stale state
-                motion, shown, hold = Motion(), None, 0
-                arm = {p: 0 for p in POSES}
-
-            face, hands, body, m = None, [], None, {}
-            raw, dbg = None, {}
-
-            if ctl.mode == "off":
-                # No detection, no overlay. `frame` goes to the virtual camera
-                # exactly as the webcam produced it.
-                shown, hold = None, 0
-            else:
-                ts = clock.next()
-                mp_img = mp.Image(image_format=mp.ImageFormat.SRGB,
-                                  data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                fr = face_det.detect_for_video(mp_img, ts)
-                hr = hand_det.detect_for_video(mp_img, ts)
-                pr = pose_det.detect_for_video(mp_img, ts)
-
-                face = Face(fr.face_landmarks[0],
-                            fr.face_blendshapes[0] if fr.face_blendshapes else None, W, H) \
-                    if fr.face_landmarks else None
-                hands = [Hand(h, W, H) for h in hr.hand_landmarks]
-                body = Body(pr.pose_landmarks[0], W, H) if pr.pose_landmarks else None
-
-                m = measure(face, base) if face is not None else {}
-                tongue = tongue_score(frame, face, hands,
-                                      over("tongue_jaw", m, "z_jaw", "jaw")) if face is not None else 0.0
-                gesture = motion.update(hands, face)
-                raw, dbg = decide(face, hands, body, tongue, gesture, m)
-
-                fired = None
-                for p in POSES:
-                    arm[p] = arm[p] + 1 if raw == p else 0
-                    if ctl.mode == "auto" and raw == p and arm[p] >= ARM.get(p, 3):
-                        fired = p
-                fired = ctl.take_forced(now) or fired   # a named meme always wins
-
-                if fired:
-                    if fired != shown:
-                        shown_since = now
-                    shown, hold = fired, HOLD_FRAMES
-                elif hold > 0:
-                    hold -= 1
-                else:
-                    shown = None
-```
-
-Note what stays unchanged below it: the `if vcam: vcam.send(frame)` block. In
-`off` mode `frame` was never written to, so the send is a pass-through.
-
-### Edit 5 — always show the mode on the preview
-
-Find:
-
-```python
-            preview = frame
-            if show_hud:
-                preview = frame.copy()
-                draw_hud(preview, shown, raw, dbg, face, hands, body, base)
-```
-
-Replace with:
-
-```python
-            preview = frame.copy()
-            if show_hud:
-                draw_hud(preview, shown, raw, dbg, face, hands, body, base)
-            draw_badge(preview, ctl)        # preview only — never sent to Meet
-```
-
-The badge is drawn on a *copy*, after `vcam.send()`. Nobody in the call sees it.
-
-### Edit 6 — keys
-
-Find:
-
-```python
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
-                break
-            if key == ord("d"):
-                show_hud = not show_hud
-```
-
-Replace with:
-
-```python
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or ctl.quit:
-                break
-            if key == ord("d"):
-                show_hud = not show_hud
-            elif key == ord("m"):
-                print(ctl.handle("toggle"))
-            elif key == ord("n"):
-                print(ctl.handle("manual"))
-            elif key == ord(" "):
-                print(ctl.handle("off"))
-```
-
-Then, at the bottom of the same key block, find:
-
-```python
-            elif 0 < key < 256 and chr(key) in TEST_KEYS:
-                forced, forced_until = POSES[TEST_KEYS.index(chr(key))], now + 2.0
-```
-
-Replace with:
-
-```python
-            elif 0 < key < 256 and chr(key) in TEST_KEYS:
-                ctl.fire(POSES[TEST_KEYS.index(chr(key))])
-```
-
-(The old `forced, forced_until = None, 0.0` initialiser above the loop is now
-unused. Harmless either way.)
-
----
-
-## 3. Run it
-
-On Windows, double-click `start.bat` (or a desktop shortcut to it) a minute
-before the Meet. It is `--hotkeys`, starting OFF; keep its window open.
-
-```bash
-python its_giving_v2.py --hotkeys            # starts OFF
-python its_giving_v2.py --mode manual        # starts armed, command-only
-python its_giving_v2.py --size 640x480       # if your laptop fans spin up
-```
-
-It prints the device name. Point Meet at that.
-
----
-
-## 4. Commands
-
-Type these into the terminal that is running the script:
-
-| command | effect |
-|---|---|
-| *(blank Enter)* | **panic — straight to off.** Smash it. |
-| `off` / `panic` | plain webcam |
-| `manual` | armed, command-only |
-| `auto` | poses fire on their own |
-| `auto 45` | auto for 45 seconds, then back to off **by itself** |
-| `heart`, `crash`, `2` | fire that meme for ~2.5s (prefix or number both work) |
-| `hold heart` / `clear` | stick one up until cleared |
-| `list` / `status` / `help` | … |
-| `quit` | shut down cleanly |
-
-Keys in the preview window: `space` off, `n` manual, `m` toggle, `d` HUD,
-`1-9 0 - = [ ]` fire a meme, `q` quit.
-
-Global hotkeys with `--hotkeys` (work while Meet has focus, so you never
-leave the call):
-`ctrl+alt+A` auto for 60 s, then off by itself · `ctrl+alt+N` manual ·
-`ctrl+alt+.` off · `ctrl+alt+M` toggle ·
-`ctrl+alt+1-9 0 - = [ ]` fire that meme (same order as `list`) ·
-`ctrl+alt+F` FAHHHHH (also `f` in the preview, or type `fahhh`; it has no
-gesture, and it is picture only — Meet gets no sound from a virtual camera).
-
-The timed arm is the feature to actually use. `auto 60` before a call with
-friends means it cannot possibly still be armed an hour later when your
-Extended Essay supervisor dials in.
-
----
-
-## 5. Google Meet specifics
-
-1. **Start the script before opening the Meet tab.** Chrome enumerates cameras
-   when the tab gets media permission. Meet handles a late-arriving device
-   better than Zoom does, but starting first avoids the question entirely.
-2. Join, then **⋮ → Settings → Video → Camera → "OBS Virtual Camera"**. Meet
-   remembers this per browser profile, so it is a one-time choice.
-3. **Turn Meet's own effects off.** ⋮ → Apply visual effects → None. Background
-   blur runs *after* your feed arrives, so it will happily blur a meme into
-   mush, and it costs you a lot of CPU on top of MediaPipe.
-4. **Mirroring.** Your self-view is mirrored; other people see the unmirrored
-   feed. Only matters if a meme has text on it.
-5. **Test on yourself first.** Open a Meet with no one else in it, arm `auto`,
-   and pull faces. Meet's self-view is what the room gets.
-6. **CPU.** Three MediaPipe models at 1280x720 is real work. `--size 640x480`
-   roughly quarters it, and Meet downscales you anyway.
-
-### Two honest warnings
-
-**It will fire on things you didn't mean.** `talking_to_wall` triggers on hands
-moving in frame, `suspicious` on a turned head plus a squint, `open_mouth` on a
-yawn. That is the whole reason `manual` exists — in `manual` you get the
-tracking without the surprises, which is the mode to use for anything where
-being funny is a bonus rather than the point.
-
-**Check the room before you arm it.** School and university Meets get recorded,
-and a recording outlives the joke. Default-off plus `auto 60` is the habit that
-keeps this a good idea. For anything that goes near an admissions officer or a
-recommender, leave it off — your camera should be boring and your work
-shouldn't be.
-
----
-
-## 6. If something breaks
-
-| symptom | cause |
-|---|---|
-| Meet shows no "OBS Virtual Camera" | OBS never opened once / script started after the tab |
-| black frame in Meet | script quit — restart it, the device vanishes with the process |
-| `ImportError: pyvirtualcam` | `pip install pyvirtualcam` inside the venv |
-| hotkeys silent on macOS | System Settings → Privacy & Security → Accessibility → allow your terminal |
-| MediaPipe aborts on start | you unpinned a requirement — `pip install -r requirements.txt` |
-| everything fires at once | calibrated mid-expression — `python its_giving_v2.py --calibrate` again |
-| nothing fires in `auto` | check `POSES` order before touching thresholds; first match wins |
+Press Ctrl+Alt+A and do the gesture a few times. `trace.csv` records every
+armed detection: the decision, head turn, squint, thumb/index-to-nose and
+palm-to-mouth distances (in face-widths), hand motion, and wrist positions.
+That's how the nose pinch was fixed: the trace showed a real pinch measures
+thumb 0.41–0.43 and gap 0.45–0.48 face-widths, against old limits of 0.35 and
+0.30. The thresholds live in `decide()` and in `Z`, `FLOOR` and `ARM` at the
+top of `its_giving_v2.py`.

@@ -1,216 +1,307 @@
-# It's giving...
+# It's giving... — the meme cam for Google Meet
+
+![Python 3.9–3.12](https://img.shields.io/badge/python-3.9–3.12-3776ab)
+![Windows · macOS · Linux](https://img.shields.io/badge/platform-Windows%20·%20macOS%20·%20Linux-555)
+![Google Meet](https://img.shields.io/badge/works%20in-Google%20Meet-00897b)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
+Pull a face at your webcam and the matching meme lands on your head, live, in
+Google Meet. Or keep it switched off, fire any meme with a hotkey, and your
+friends never see it coming.
+
+**Website:** <https://abishekashwinakash3-dotcom.github.io/itsgiving_-Updated_off-ON/> ·
+**Complete Google Meet guide:** [MEET_SETUP.md](MEET_SETUP.md)
 
 <table>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/aa5ed48f-70c2-4022-ac7f-87a4c3066a24" width="100%"></td>
-    <td><img src="https://github.com/user-attachments/assets/c764c5eb-c17a-47f2-b4b0-49153c8cb3c0" width="100%"></td>
+    <td width="50%"><img src="docs/img/vcam-off.jpg" alt="Plain webcam, memes off"></td>
+    <td width="50%"><img src="docs/img/vcam-heart.jpg" alt="Heart meme over the face"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>off</b> — your plain webcam</td>
+    <td align="center"><b>Ctrl+Alt+2</b> — what the call sees a second later</td>
   </tr>
 </table>
 
-Pull a face at your webcam. It works out *which* face, and drops the matching
-meme over your head, scaled to follow you around the frame. You can extend and
-add more memes to your heart's desire.
+<sub>Both frames were captured straight off OBS Virtual Camera, the exact feed
+Google Meet receives, during a real test on 14 September 2026. Faces are
+blurred for privacy.</sub>
 
-Point Zoom at its virtual camera and the whole call sees it.
-
-```bash
-python its_giving.py              # preview + virtual camera
-python its_giving.py --no-vcam    # preview only
-```
-
-Fourteen reactions: time out, heart hands, hands over face, crashing out,
-dancing, nose pinch, flirty, hand up, tongue out, gasp, disgust, talking to the
-wall, side-eye, and spinning.
-
-There's a second file, `its_giving_v2.py`, which is the same thing with the
-expression thresholds calibrated to *your* face instead of to a number I
-guessed. 
+Built on [gazijarin/itsgiving](https://github.com/gazijarin/itsgiving) by Gazi
+(MIT). This fork adds a safe **off / manual / auto** layer, hotkeys that work
+while Meet has focus, a one-click Windows launcher, a 15th meme (**FAHHHHH**),
+3× smoother video while armed, and detection tuned from real measurements.
 
 ---
 
-## Setup
+## Quick start: Google Meet on Windows
 
-One command. It finds a usable Python, builds the virtualenv, installs the
-pinned dependencies, checks the machine, and offers to calibrate:
+**Once:**
 
-```bash
-./setup.sh                                          # macOS / Linux
-powershell -ExecutionPolicy Bypass -File setup.ps1  # Windows
+```powershell
+git clone https://github.com/abishekashwinakash3-dotcom/itsgiving_-Updated_off-ON
+cd itsgiving_-Updated_off-ON
+powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-Or by hand:
+`setup.ps1` finds Python 3.12, builds the virtualenv, installs the pinned
+dependencies, runs `doctor.py`, and offers the seven-second calibration.
+Install [OBS Studio](https://obsproject.com) too — it provides the
+**OBS Virtual Camera** that Meet will use. Then right-click `start.bat` →
+**Send to → Desktop (create shortcut)**.
+
+**Before every Meet:**
+
+1. Double-click the **start.bat** shortcut. It starts **OFF** — a plain webcam.
+2. In Meet, click the **^** next to the camera button → **OBS Virtual Camera**.
+3. Minimize both windows. Don't close them.
+
+**During the call** (keep your cursor in Meet):
+
+| hotkey | does |
+|---|---|
+| **Ctrl+Alt+F** | FAHHHHH |
+| **Ctrl+Alt+A** | gesture mode for 60 seconds, then off by itself |
+| **Ctrl+Alt+N** | manual — memes only when you fire one |
+| **Ctrl+Alt+1–9, 0, -, =, [, ]** | fire memes 1–14 |
+| **Ctrl+Alt+.** | off — plain webcam |
+
+**After the call:** click the preview window and press **q twice**.
+
+macOS and Linux: run `./setup.sh`, then `python its_giving_v2.py --hotkeys`.
+Everything else is the same. Full walkthrough and troubleshooting:
+[MEET_SETUP.md](MEET_SETUP.md).
+
+---
+
+## It really works in Google Meet
+
+![Google Meet using OBS Virtual Camera](docs/img/meet-obs-virtual-camera.jpg)
+
+<sub>Google Meet with **OBS Virtual Camera** selected, fed by the meme cam
+(in off, so a plain webcam). Face and name blurred.</sub>
+
+All 14 original memes, fired one after another during a live Meet and captured
+off the virtual camera:
+
+![All 14 memes live on the virtual camera](docs/img/all-memes-live.jpg)
+
+And the new one:
+
+<p align="center"><img src="docs/img/fahhh-demo.gif" width="400" alt="FAHHHHH meme animation"></p>
+
+<sub>The FAHHHHH animation composited onto a captured frame. The caption is an
+original graphic in <code>assets/fahhh.gif</code>. It is picture only — a
+virtual camera carries no sound to Meet.</sub>
+
+---
+
+## The 15 memes
+
+| # | meme | gesture (in gesture mode) | hotkey |
+|---|---|---|---|
+| 1 | `time_out` | referee's T — one hand flat on top, one vertical underneath | Ctrl+Alt+1 |
+| 2 | `heart` | heart hands — index tips and thumb tips touching | Ctrl+Alt+2 |
+| 3 | `cover_nose` | both palms over your mouth — *use the hotkey, see below* | Ctrl+Alt+3 |
+| 4 | `crashing_out` | both hands on your head, mouth open | Ctrl+Alt+4 |
+| 5 | `dance` | elbows up, hands behind your head, mouth closed | Ctrl+Alt+5 |
+| 6 | `nose_closed` | pinch your nose and hold still | Ctrl+Alt+6 |
+| 7 | `flirty` | one fingertip on your lips | Ctrl+Alt+7 |
+| 8 | `hand_up` | open palm raised beside your head | Ctrl+Alt+8 |
+| 9 | `tongue_out` | tongue out, mouth open, facing the light | Ctrl+Alt+9 |
+| 10 | `open_mouth` | jaw drops | Ctrl+Alt+0 |
+| 11 | `disgusted` | scrunch your nose, or brows down and frown | Ctrl+Alt+- |
+| 12 | `talking_to_wall` | hands waving in front of you, away from your face | Ctrl+Alt+= |
+| 13 | `suspicious` | a big head turn plus a squint, held about 1.5 s | Ctrl+Alt+[ |
+| 14 | `spin` | leave the frame completely | Ctrl+Alt+] |
+| 15 | `fahhh` | none — fire it on purpose | **Ctrl+Alt+F** |
+
+Swap any meme by dropping a JPEG, PNG or animated GIF named after the pose
+into `assets/` — `heart.png` replaces the heart.
+
+---
+
+## Tested on a real laptop
+
+Everything below was measured on 14 September 2026: Windows 11, HP Wide Vision
+HD webcam (30 fps), Python 3.12.10, mediapipe 0.10.21, NumPy 1.26.4,
+OpenCV 4.11.0, pyvirtualcam 0.15.0, OBS Studio 32.2.1, Google Meet in Brave.
+
+### Smooth video while armed
+
+Arming used to drop Meet to about 9 fps: the virtual camera only got a frame
+after all three MediaPipe models finished (face 5.1 ms, hands 35.3 ms,
+body 43.2 ms per frame at 640×480). Detection now runs on a background thread,
+and every webcam frame goes straight through.
+
+```mermaid
+xychart-beta
+    title "Frames per second Meet receives while armed"
+    x-axis ["Before, 640x480", "After, 640x480", "After, 1280x720"]
+    y-axis "fps (webcam delivers 30)" 0 --> 30
+    bar [9.0, 26.8, 27.2]
+```
+
+Detection runs on a 640-pixel-wide copy of each frame. On three real faces, its
+landmarks landed within **0.8 px** of full-resolution detection.
+
+### Checks that pass
+
+| what | result |
+|---|---|
+| `setup.ps1`, end to end on a clean Windows install | exit 0, every `doctor.py` check ok |
+| live test read back off OBS Virtual Camera (starts off, refuses memes while off, manual, meme visible, panic, timed auto, quit) | **15 / 15** |
+| hotkeys driven by real keyboard-hook events | **23 / 23** |
+
+### Gestures tuned from traced data
+
+`--trace` writes what the detector measured on every frame. One 90-second
+trace (703 detections) showed why the nose pinch never fired. A real pinch
+measures index 0.22, thumb 0.41–0.43 and a 0.45–0.48 thumb–index gap, in
+face-widths: the fingers sit either side of the nose. The old limits
+(0.35 / 0.35 / 0.30) could never match that. Meanwhile a hand held at the face
+jitters enough to count as "waving", so `talking_to_wall` stole the pose.
+
+| phase of the trace | pinch matches, old → new | stolen by talking_to_wall, old → new |
+|---|---|---|
+| hand at nose, moving | 5 → **71** | 68 → **5** |
+| still pinch | 1 → **67** | 24 → **7** |
+| palms over mouth (should not match) | 1 → 1 | 29 → **4** |
+
+In the next live round, `nose_closed` fired twice and `talking_to_wall` fired
+zero times. `suspicious` had misfired 4 and then 3 times per minute on glances
+at another window. It now needs a clear head turn (0.22) held for about
+1.2 seconds, and it misfired 0 times in the next round.
+
+**Known gap:** with both palms over the mouth, the hand model found two hands
+in 0 of 247 detections, so `cover_nose` rarely fires from the gesture. Use
+Ctrl+Alt+3.
+
+---
+
+## Modes
+
+It starts in `off`.
+
+| mode | detectors | what the call sees |
+|---|---|---|
+| `off` *(default)* | not running at all | your plain webcam |
+| `manual` | running | your face, plus a meme **only** when you fire one |
+| `auto` | running | memes fire from your gestures |
+
+In `off` the frame is a straight pass-through. The MediaPipe calls are skipped
+entirely, so there is no code path that can draw anything.
+
+Type commands into the terminal running the script, or use the hotkeys:
+
+| command | effect |
+|---|---|
+| *(blank Enter)* | **panic — straight to off** |
+| `off` / `panic` | plain webcam |
+| `manual` | armed, memes on command only |
+| `auto` | memes fire from gestures |
+| `auto 60` | auto for 60 seconds, then back to off **by itself** (= Ctrl+Alt+A) |
+| `heart`, `crash`, `2`, `fahhh` | fire that meme (name, prefix or number) |
+| `hold heart` / `clear` | keep one up until cleared |
+| `list` / `status` / `help` / `quit` | … |
+
+Keys in the preview window: `space` off · `n` manual · `m` toggle · `d` HUD ·
+`c` recalibrate · `1`–`9` `0` `-` `=` `[` `]` fire a meme · `f` FAHHHHH ·
+**`q` twice within 2 s** to quit.
+
+**Build the timed habit.** The realistic mistake isn't forgetting to switch it
+on; it's forgetting it's still on two hours later. `auto 60` (Ctrl+Alt+A)
+switches itself off, so it can't still be armed when someone who matters dials
+in. And check the room first: calls get recorded, and a recording outlives the
+joke.
+
+**Don't quit it mid-call.** Quitting removes the camera device and Meet pauses
+your video. Leave it running in `off` instead. That's why a single `q` only
+warns: quitting takes two presses.
+
+---
+
+## Setup details
+
+Python 3.9–3.12 (mediapipe 0.10.21 has no wheel for 3.13+). Three MediaPipe
+models (~17 MB) download themselves on first run. By hand:
 
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate           # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python doctor.py
+python its_giving_v2.py --calibrate
 ```
-
-Python 3.9–3.12 (mediapipe 0.10.21 has no wheel for 3.13+). Three MediaPipe
-models (~17 MB) download themselves on first run.
 
 **`python doctor.py` is the thing to run when something is wrong.** It checks
-the Python version, the dependency pins, the models and assets, whose face the
-calibration belongs to, which camera indexes actually work, and whether a
-virtual-camera backend exists — and prints the command that fixes each one.
+the Python version, the dependency pins, the models and all 15 meme images,
+whose face the calibration belongs to, which camera indexes work, and whether a
+virtual-camera backend exists. For each problem it prints the command that
+fixes it.
 
-**Don't unpin the dependencies.** MediaPipe 0.10.30+ (including 1.0.x) ships
-macOS wheels that abort the moment they open a detector, so it's held at
-0.10.21. That build needs NumPy 1.x, and OpenCV 5 needs NumPy 2 — and 0.10.21
-asks for an *unpinned* `opencv-contrib-python`, which quietly drags OpenCV 5 and
-therefore NumPy 2 back in. That's why the OpenCV pins are in there even though
-nothing in the code cares. Unpin one and you have to unpin all three.
+**Calibrate before you rely on gesture mode.** The `calibration.json` that
+ships in this repo is somebody else's resting face. It loads without any
+warning and quietly measures your expressions against a stranger's neutral.
+`doctor.py` flags it, including on Windows, where git's line-ending conversion
+used to hide it. Keep your own calibration out of your commits.
+
+**Don't unpin the dependencies.** MediaPipe 0.10.30+ ships macOS wheels that
+abort the moment they open a detector, so it's held at 0.10.21. That build
+needs NumPy 1.x, and OpenCV 5 needs NumPy 2. On top of that, 0.10.21 asks for
+an *unpinned* `opencv-contrib-python`, which quietly drags OpenCV 5, and
+therefore NumPy 2, back in. Unpin one and you have to unpin all three.
 
 ---
 
-## Running it
+## How it works
+
+```
+camera frame ──────────────────────────────────────────────► virtual camera (every frame)
+     │                                                              ▲
+     └─► background thread: MediaPipe on a 640-wide copy            │
+           face: 478 landmarks + 52 blendshapes                     │
+           hands: 2 × 21 points · body: shoulders, elbows, wrists   │
+              │                                                     │
+              ▼                                                     │
+         measures → sigma above YOUR neutral → decide()             │
+         (first matching pose wins) → must persist N detections ────┘ overlay
+```
+
+### Normalising away the camera
+
+Nothing is compared in pixels. Every distance is divided by the width of your
+face box first, so `near(hand.index, face.nose, 0.35)` means "within 35% of a
+face width" at 40 cm and at a metre and a half.
+
+### Why fixed thresholds don't work
+
+MediaPipe's blendshapes are **not zero at rest**, and the offset is personal:
+some faces idle at `jawOpen` 0.02, others at 0.19. So `jawOpen > 0.5` is a
+different threshold for every face. v2 records seven seconds of your neutral
+face — the mean and wobble of all 52 channels — and scores every expression as
+
+```
+z = (what the channel reads now − your resting mean) / your resting wobble
+```
+
+"6 sigma above your neutral jaw" means the same thing on every face.
+
+### Tuning from data
 
 ```bash
-source venv/bin/activate              # every new terminal
-python its_giving_v2.py --calibrate   # once, seven seconds
-python its_giving_v2.py               # starts OFF - plain webcam
+python its_giving_v2.py --hotkeys --trace trace.csv
 ```
 
-**Calibrate before you rely on it.** A `calibration.json` ships in this repo and
-it is somebody else's resting face. It is valid JSON, so it loads without any
-warning and quietly measures your expressions against a stranger's neutral.
-`doctor.py` flags it.
-
-**It starts with the memes off.** The virtual camera runs and carries your
-ordinary face; nothing fires until you arm it. See
-[Arming and disarming](#arming-and-disarming) below, or `MEET_SETUP.md` for the
-full Google Meet walkthrough.
-
-| key | does |
-|---|---|
-| `q` | quit |
-| `d` | toggle the HUD |
-| `c` | recalibrate |
-| `space` | off — plain webcam |
-| `n` | manual — armed, command-only |
-| `m` | toggle off / last armed mode |
-| `1`–`9` `0` `-` `=` `[` `]` | force a reaction on screen for ~2.5 seconds |
-
----
-
-## Using it in meetings
-
-The virtual camera is on by default, and Zoom, Meet, Teams, Discord and OBS all
-treat it as a normal webcam.
-
-**1. Install a backend** (once):
-
-| OS | do this |
-|---|---|
-| macOS | install [OBS Studio](https://obsproject.com), open it once, quit it |
-| Windows | install OBS Studio, or run its virtual-camera installer |
-| Linux | `sudo apt install v4l2loopback-dkms` then `sudo modprobe v4l2loopback` |
-
-**2. Run it.** It prints the device it's publishing to:
-
-```
-Virtual camera: 'OBS Virtual Camera'  <- pick this camera in Zoom / Meet
-```
-
-**3. Pick that device** in your meeting app — Zoom: Settings → Video → Camera.
-Meet, Teams and Discord all have the same setting under Video.
-
-**Start this before your meeting app.** Most of them scan for cameras once at
-launch and won't notice a device that appeared later.
-
-**Don't quit it for a serious meeting.** Killing the script removes the camera
-device and your meeting app shows a black rectangle, which is worse than a meme.
-Leave it running and set it to `off` instead — that is what the modes are for.
-
----
-
-## Arming and disarming
-
-Three modes. It starts in `off`.
-
-| mode | detectors | what the call sees |
-|---|---|---|
-| `off` *(default)* | not running at all | your plain webcam |
-| `manual` | running | your face, plus a meme **only** when you name one |
-| `auto` | running | reactions fire on their own |
-
-In `off` the frame is a straight pass-through: the MediaPipe calls are skipped
-entirely, so there is no code path that can draw anything. Type commands into
-the terminal running the script:
-
-| command | effect |
-|---|---|
-| *(blank Enter)* | **panic — straight to off.** Smash it. |
-| `off` / `panic` | plain webcam |
-| `manual` | armed, command-only |
-| `auto` | reactions fire on their own |
-| `auto 45` | auto for 45 seconds, then back to off **by itself** |
-| `heart`, `crash`, `2` | fire that reaction (prefix or number both work) |
-| `hold heart` / `clear` | stick one up until cleared |
-| `list` / `status` / `help` / `quit` | … |
-
-`--mode manual` or `--mode auto` changes what it starts in. `--hotkeys` adds
-global shortcuts via pynput (`ctrl+alt+A` auto for 60 s, `ctrl+alt+N`
-manual, `ctrl+alt+.` off, `ctrl+alt+M` toggle, `ctrl+alt+1-9 0 - = [ ]` fire
-that meme, `ctrl+alt+F` FAHHHHH) so you needn't leave the meeting tab.
-
-The timed arm is the one to build a habit around. The realistic mistake isn't
-forgetting to switch it on — it's forgetting it's still on two hours later, so
-`auto 60` before a call with friends means it cannot still be armed when
-someone who matters dials in.
-
-Two honest warnings. **`auto` misfires**: `talking_to_wall` triggers on hands
-moving in frame and `suspicious` on a turned head plus a squint, so an ordinary
-explaining-something gesture can set it off — `manual` is the mode for anything
-where funny is a bonus rather than the point. And **check the room before you
-arm it**: calls get recorded, and a recording outlives the joke.
-
----
-
-## The reactions
-
-| pose | do this |
-|---|---|
-| `time_out` | referee's T — one hand flat on top, one vertical underneath |
-| `heart` | two hands, index tips together, thumb tips together |
-| `cover_nose` | both hands over your nose and mouth |
-| `crashing_out` | both hands to your head, mouth open |
-| `dance` | both hands up behind your head, mouth closed |
-| `nose_closed` | pinch your nose shut |
-| `flirty` | one index fingertip on your lips |
-| `hand_up` | one open palm up beside your head |
-| `tongue_out` | tongue out, mouth open |
-| `open_mouth` | jaw drops |
-| `disgusted` | scrunch your nose, or brows down and frown |
-| `talking_to_wall` | hands in frame, gesturing away |
-| `suspicious` | turn your head and squint |
-| `spin` | leave the frame entirely |
-
-Assets live in `assets/`, named after the pose — `heart.jpeg`, `spin.gif`.
-Swap in your own by dropping a file with the right name; JPEG, PNG and animated
-GIF all work, alpha channels composite properly, and GIF frame timings are read
-from the file. A missing asset gets you a red placeholder, not a crash.
-
----
-## Making it yours
-
-### Swapping a meme (~30 seconds)
-
-Drop a file in `assets/` named after the pose — `heart.png` replaces the heart
-reaction. JPEG, PNG and animated GIF all work; transparency composites properly
-and GIF timings are read from the file. A `something_` prefix is ignored, so
-`2019_heart.jpeg` still counts. Press that pose's test key to check it sits
-right on your head.
+The trace logs, for every armed detection: the decision, head turn, squint,
+fingertip-to-nose and palm-to-mouth distances, hand motion, and pose-model
+wrist positions. Tune `decide()` against those numbers, not by feel.
 
 ### Adding a pose
 
-**1.** Drop `assets/thinking.png` in place.
-
-**2.** Add the name to `POSES`. The list is checked top to bottom and the first
-match wins, so put it above anything it might be mistaken for.
-
-**3.** Add a branch to `decide()`:
+1. Drop `assets/thinking.png` in place.
+2. Add `"thinking"` to `POSES` (the list is checked top to bottom; first match wins).
+3. Add a branch to `decide()`:
 
 ```python
     for h in hands:
@@ -218,117 +309,30 @@ match wins, so put it above anything it might be mistaken for.
             return "thinking", d
 ```
 
-You have `face` (`.nose` `.chin` `.mouth` `.w` `.h`, `.b("jawOpen")` for any
-blendshape), `hands` (`.palm` `.thumb` `.index`, `.open`), `body`
-(`.elbows_up`), `m` for expressions in sigma, and `near(a, b, k)` for "within k
-face widths" — which is what keeps it working at any distance from the camera.
-
-**4.** Give it an `ARM` count if it's twitchy, then tune it against the HUD.
-Getting it to fire is easy; the work is *stopping* doing it, doing everything
-nearby that might be confused with it, and watching the number stay low.
-
-If your pose needs an expression channel that isn't measured yet, add it to `Z`,
-`FLOOR` and `measure()`, then put it in `draw_hud()` - you can't tune a number
-you can't see.
-
-### Two gotchas
-
-`TEST_KEYS` has one key per pose, matched by position. Adding a fifteenth pose
-is fine (it just gets no test key), but removing one without removing a key
-crashes when that key is pressed.
-
-If a new pose never fires, check the `POSES` order before you touch any
-threshold. Something earlier matching first is the usual cause, and lowering
-`Z` can't fix it.
-
----
-
-## How it works
-
-```
-camera frame
-     |
- 1.  MediaPipe    face: 478 landmarks + 52 blendshapes
-                  hands: 2 x 21 points
-                  body: shoulders, elbows, wrists
-     |
- 2.  Measures     face-relative geometry, tongue colour, hand speed
-     |
- 3.  Baseline     expressions re-expressed in sigma above YOUR neutral face
-     |
- 4.  decide()     one ordered pass -- first pose that matches wins
-     |
- 5.  arm / hold   must persist N frames to fire, lingers 10 frames after
-     |
-  overlay         scaled to your face, alpha-composited, GIFs animated
-```
-
-### Normalising away the camera
-
-Landmarks come out as pixel coordinates, which depend on how far you're sitting
-from the lens. So nothing is compared in pixels: every distance is divided by
-the width of your face box first. `near(hand.index, face.mouth, 0.22)` means
-"within 22% of a face width", and that means the same thing at 40 cm and at a
-metre and a half. Hand speed gets the same treatment — face-widths per frame.
-
-Head turn is the nose's position between the two edges of your face: 0 facing
-the camera, about 0.4 in full profile. Already a ratio, so already scale-free.
-
-### Why fixed thresholds don't work, and what to do instead
-
-This is the interesting part.
-
-MediaPipe's blendshape values are **not zero when your face is at rest**, and
-the offset is very personal. Some faces idle at `jawOpen` 0.02; others sit at
-0.19 doing nothing. If your mouth naturally turns up you can read `mouthSmile`
-0.3 while thinking about absolutely nothing.
-
-So `jawOpen > 0.5` is not one threshold — it's a different threshold for every
-face that meets it. Too eager for some, physically unreachable for others. Any
-constant you pick is a compromise between people, and no individual user is the
-average of those people.
-
-v2 fixes this by measuring your own neutral first. Seven seconds of a bored face
-records the **mean and the standard deviation** of all 52 channels, and from
-then on every expression is scored as:
-
-```
-z = (what the channel reads now - your resting mean) / your resting wobble
-```
-
-"6 sigma above your neutral jaw" means the same thing on every face. "Above 0.5"
-doesn't. Same two gestures, on a face that idles low and sits still versus one
-that idles high and fidgets:
-
-```
-                        still face        loose face
-resting                 z  +0.1           z  +0.1        both quiet
-gasp                    z +38.7           z  +8.7        both fire
-nose scrunch            z +19.3           z  +5.5        both fire
-```
+4. Give it an `ARM` count if it's twitchy, then check it with `--trace`.
 
 ---
 
 ## What's where
 
 ```
-its_giving_v2.py   the calibrated version — the one to use
-its_giving.py      v1: same poses, fixed thresholds
-meme_control.py    the off / manual / auto layer and its commands
+start.bat          Windows: double-click before a Meet (starts off, hotkeys on)
+its_giving_v2.py   the calibrated meme cam — the one to use
+meme_control.py    the off / manual / auto layer, commands and hotkeys
 doctor.py          checks this machine can run it, and says what to fix
-setup.sh           one-command install (macOS / Linux)
 setup.ps1          one-command install (Windows)
-MEET_SETUP.md      Google Meet walkthrough, and what to do when it breaks
-calibration.json   your neutral face (made by --calibrate, gitignored)
-requirements.txt   pinned on purpose — read the comments before changing them
+setup.sh           one-command install (macOS / Linux)
+MEET_SETUP.md      the complete Google Meet guide and troubleshooting
+its_giving.py      v1: same poses, fixed thresholds
 assets/            the memes, named after their pose
-models/            MediaPipe .task files (downloaded on first run)
+docs/              the project website (GitHub Pages)
+requirements.txt   pinned on purpose — read the comments before changing them
 ```
 
-Inside the file: `POSES` / `Z` / `FLOOR` / `ARM` is the tuning block,
-`Baseline` and `run_calibration()` are the seven-second sit-still, `measure()`
-turns a face into sigma-above-your-neutral, and `decide()` is the ordered pose
-checks.
+## Credits
 
-Want to change **what sets off what**? `decide()`.
-Want to change **how easily it goes off**? `Z`, `FLOOR` and `ARM`.
+Original project, poses and meme set: [gazijarin/itsgiving](https://github.com/gazijarin/itsgiving)
+by Gazi, MIT licensed — see [LICENSE](LICENSE). This fork: the arm/disarm
+layer, Meet hotkeys, the Windows launcher and installer, `doctor.py`, threaded
+detection, trace-based tuning, and the FAHHHHH meme. It was built and tested
+with Claude Code.
